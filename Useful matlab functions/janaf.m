@@ -54,6 +54,7 @@ for i=1:length(T)
         sprintf(['Temperature ' num2str(T(i)) 'K not between 300K and 5000K!'])
     end
 end
+end
 
 % out = zeros(size(T));
 % ind1 = T>1000 & T<=5000;
@@ -80,5 +81,6 @@ switch prop
     case 'h'
         out=(ai(1)+ai(2)/2*T+ai(3)/3*T.^2+ai(4)/4*T.^3+ai(5)/5*T.^4+ai(6)/T).*T*R/MWeight;
     case 's'
-        out=(ai(1)*ln(T)+ai(2)*T+ai(3)/2*T.^2+ai(4)/3*T.^3+ai(5)/4*T.^4+ai(7))*R/MWeight;
+        out=(ai(1)*log(T)+ai(2)*T+ai(3)/2*T.^2+ai(4)/3*T.^3+ai(5)/4*T.^4+ai(7))*R/MWeight;
+end
 end
