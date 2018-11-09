@@ -123,42 +123,42 @@ end
 
 
 %% Rankine-Hirn de base
-h0=XSteam('hL_T',T_0-273.15);
-s0=XSteam('sL_T',T_0-273.15);
 
+%Etat 3
 t3=options.T_max;
 p3=options.p3_hp*1e-5; % [bar]
 h3=XSteam('h_pT',p3,t3);
 s3=XSteam('s_pT',p3,t3);
 x3=nan;
-e3=(h3-h0)-T_0*(s3-s0);
+e3=h3-T_0*s3;
 
 %Etat 4
 x4=options.x4;
 t4=options.T_cond_out+options.TpinchCond;
+h4s=
 h4=XSteam('h_Tx',t4,x4);
 s4_V=XSteam('sV_T',t4);
 s4_L=XSteam('sL_T',t4);
 s4=x4*s4_V + (1-x4)*s4_L;
 p4=XSteam('p_hs',h4,s4);
-e4=(h4-h0)-T_0*(s4-s0);
+e4=h4-T_0*s4;
 
 %Etat 1
 t1=t4;
 x1=0;
-h1=XSteam('hL_T',t1);
+h1=XSteam('h_Tx',t1,x1);
 p1=XSteam('psat_T',t1);
-s1=XSteam('sL_T',t1);
-e1=(h1-h0)-T_0*(s1-s0);
+s1=XSteam('s_pT',p1,t1);
+e1=h1-T_0*s1;
 
 %Etat 2
+s2=s1;
 p2=p1*p3/p4;
-h2s=XSteam('h_ps',p2,s1);
-h2=h1+1/options.eta_SiC*(h2s-h1);
-s2=XSteam('s_ph',p2,h2);
+h2s=XSteam('h_ps',p2,s2);
+h2=h1+1/option.eta_SiC*(h2s-h1);
 x2=XSteam('x_ph',p2,h2);
 t2=XSteam('T_ph',p2,h2);
-e2=(h2-h0)-T_0*(s2-s0);
+e2=h2-T_0*s2;
 
 
 if display ==1 
@@ -176,19 +176,6 @@ if display ==1
         hV_T(i) = XSteam('hV_T',T(i));
     end    
     
-    % 1-2
-    t1_2=linespace(p1,p2,50);
-    s1_2=zeros(size(t1_2));
-    h1_2=zeros(size(t1_2));
-    for i=1:length(t1_2)
-        p2_p=p1*p3/p4;
-        h2s_p=XSteam('h_ps',h2s_p,s1);
-        h1_2(i)=h1+1/options.eta_SiC*(h2s_p-h1);
-        s1_2(i)=XSteam('s_ph',p2,h2);
-        t2=XSteam('T_ph',p2,h2);
-
-    end
-
     
 end
 
