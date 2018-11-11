@@ -106,11 +106,10 @@ if nargin<3
     if nargin<2
         options = struct();
         if nargin<1
-            P_e = 250e3; % [kW] Puissance énergétique de l'installation
+            P_e = 35; % [kW] Puissance énergétique de l'installation
         end
-        P_e=35; % [kW]
         options= struct;
-        options.nsout=3; %   [-] : Number of feed-heating
+        options.nsout=2; %   [-] : Number of feed-heating
         options.reheat=0; %    [-] : Number of reheating
         options.T_max=520; %     [°C] : Maximum steam temperature
         options.T_cond_out=30; %[°C] : Condenseur cold outlet temperature
@@ -123,7 +122,7 @@ if nargin<3
         options.comb.x=0; %         [-] : the ratio O_x/C. Example 0.05 in CH_1.2O_0.05
         options.comb.y=0; %         [-] : the ratio H_y/C. Example 1.2 in CH_1.2O_0.05
         options.T_exhaust=0; %  [°C] : Temperature of exhaust gas out of the chimney
-        options.p_3=5e3;; %        [-] : High pressure after last reheating
+        options.p_3=1050e3; %        [-] : High pressure after last reheating
         options.x4=0.91; %         [-] : Vapor ratio [gaseous/liquid] (in french : titre)
         options.T_0=15; %        [°C] : Reference temperature
         options.TpinchSub=0; %  [°C] : Temperature pinch at the subcooler
@@ -220,9 +219,6 @@ x8=XSteam('x_ph',p8,h8);
 t8=XSteam('T_ph',p8,h8);
 e8=(h8-h0)-T_0*(s8-s0);
 
-
-
-
 % Plots
 if display ==1 
     %Cloche T-S
@@ -308,8 +304,8 @@ function [t_out,p_out,s_out,x_out]=expan_i(eta_SiT,h_out,h_init,s_i)
 h_outs=(h_out-(1-eta_SiT)*h_init)/(eta_SiT);
 s_outs=s_i;
 p_out=XSteam('p_hs',h_outs,s_outs);
-t_out=XSteam('t_ph',p_out,h_ii);
-s_out=XSteam('s_ph',p_out,h_ii);
+t_out=XSteam('t_ph',p_out,h_out);
+s_out=XSteam('s_ph',p_out,h_out);
 x_out = XSteam('x_ps',p_out,s_out);
 
 if x_out < 0.88
