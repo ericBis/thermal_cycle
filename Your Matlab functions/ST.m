@@ -102,12 +102,37 @@ function [ETA XMASSFLOW DATEN DATEX DAT MASSFLOW COMBUSTION FIG] = ST(P_e,option
 
 % Exemple of how to use 'nargin' to check your number of inputs
 if nargin<3
-    display = 1;
+    display = 0;
     if nargin<2
         options = struct();
         if nargin<1
             P_e = 250e3; % [kW] Puissance énergétique de l'installation
         end
+        P_e=35; % [kW]
+        options= struct;
+        options.nsout=3; %   [-] : Number of feed-heating
+        options.reheat=0; %    [-] : Number of reheating
+        options.T_max=520; %     [°C] : Maximum steam temperature
+        options.T_cond_out=30; %[°C] : Condenseur cold outlet temperature
+        options.p3_hp=4e6; %     [bar] : Maximum pressure
+        options.drumFlag=0; %   [-] : if =1 then drum if =0 => no drum.
+        options.eta_mec=0.98; %    [-] : mecanic efficiency of shafts bearings
+        % options.comb is a structure containing combustion data :
+        options.comb.Tmax=0; %      [°C] : maximum combustion temperature
+        options.comb.lambda=0; %    [-] : air excess
+        options.comb.x=0; %         [-] : the ratio O_x/C. Example 0.05 in CH_1.2O_0.05
+        options.comb.y=0; %         [-] : the ratio H_y/C. Example 1.2 in CH_1.2O_0.05
+        options.T_exhaust=0; %  [°C] : Temperature of exhaust gas out of the chimney
+        options.p_3=5e3;; %        [-] : High pressure after last reheating
+        options.x4=0.91; %         [-] : Vapor ratio [gaseous/liquid] (in french : titre)
+        options.T_0=15; %        [°C] : Reference temperature
+        options.TpinchSub=0; %  [°C] : Temperature pinch at the subcooler
+        options.TpinchEx=0; %   [°C] : Temperature pinch at a heat exchanger
+        options.TpinchCond=3; % [°C] : Temperature pinch at condenser
+        options.Tdrum=0; %      [°C] : minimal drum temperature
+        options.eta_SiC=0.85; %     [-] : Isotrenpic efficiency for compression
+        options.eta_SiT=0.88; %     [-] : Isotrenpic efficiency for Turbine. It can be a vector of 2 values :
+        %             	             eta_SiT(1)=eta_SiT_HP,eta_SiT(2)=eta_SiT_others
     end
 end
 
@@ -120,9 +145,18 @@ else
     T_0 = 288.15;  % [éC]
 end
 
+%
+nsout=options.nsout;
+eta_SiT=options.eta_SiT;
 
+%Prealocations
+t6=zeros(nsout+1,1);
+p6=zeros(nsout+1,1);
+h6=zeros(nsout+1,1);
+s6=zeros(nsout+1,1);
+x6=zeros(nsout+1,1);
+x6=zeros(nsout+1,1);
 
-%% Rankine-Hirn de base
 h0=XSteam('hL_T',T_0-273.15);
 s0=XSteam('sL_T',T_0-273.15);
 
@@ -134,33 +168,62 @@ x3=nan;
 e3=(h3-h0)-T_0*(s3-s0);
 
 %Etat 4
-x4=options.x4;
-t4=options.T_cond_out+options.TpinchCond;
-h4=XSteam('h_Tx',t4,x4);
-s4_V=XSteam('sV_T',t4);
-s4_L=XSteam('sL_T',t4);
-s4=x4*s4_V + (1-x4)*s4_L;
-p4=XSteam('p_hs',h4,s4);
+p4=options.p_3*1e-5;
+[ti,pi,hi,si,xi] = expansion(eta_SiT(1),t3,p3,h3,s3,x3,p4,0);
+t4=ti(end);
+p4=pi(end);
+h4=hi(end);
+s4=si(end);
+x4=xi(end);
 e4=(h4-h0)-T_0*(s4-s0);
 
-%Etat 1
-t1=t4;
-x1=0;
-h1=XSteam('hL_T',t1);
-p1=XSteam('psat_T',t1);
-s1=XSteam('sL_T',t1);
-e1=(h1-h0)-T_0*(s1-s0);
+%Etat 5
+if options.reheat==1
+    t5=t3;
+    p5=options.p_3;
+    h5=XSteam('h_pT',p5,t5);
+    s5=XSteam('s_pT',p5,t5);
+    e5=(h5-h0)-T_0*(s5-s0);
+    x5=nan;
+else
+    t5=t4;
+    p5=p4;
+    h5=h4;
+    s5=s4;
+    x5=x4;
+    e5=e4;
+end
 
-%Etat 2
-p2=p1*p3/p4;
-h2s=XSteam('h_ps',p2,s1);
-h2=h1+1/options.eta_SiC*(h2s-h1);
-s2=XSteam('s_ph',p2,h2);
-x2=XSteam('x_ph',p2,h2);
-t2=XSteam('T_ph',p2,h2);
-e2=(h2-h0)-T_0*(s2-s0);
+%Etat 7
+t7=30;%options.T_cond_out+options.TpinchCond;
+p7=XSteam('psat_T',t7);
+h7=XSteam('hL_T',t7);
+s7=XSteam('sL_T',t7);
+e7=(h7-h0)-T_0*(s7-s0);
+x7=0;
+
+%Etat(s) 6
+[t_i,p_i,h_i,s_i,x_i] = expansion(eta_SiT(end),t5,p5,h5,s5,x5,p7,nsout-1);
+t6=flip(t_i);
+p6=flip(p_i);
+h6=flip(h_i);
+s6=flip(s_i);
+x6=flip(x_i);
+e6=(h6-h0)-T_0*(s6-s0);
+
+%Etat 8
+p8=44; % [bar] ATTENTION VALEUR TEMPORERE
+h8s=XSteam('h_ps',p8,s7);
+h8=h7+1/options.eta_SiC*(h8s-h7);
+s8=XSteam('s_ph',p8,h8);
+x8=XSteam('x_ph',p8,h8);
+t8=XSteam('T_ph',p8,h8);
+e8=(h8-h0)-T_0*(s8-s0);
 
 
+
+
+% Plots
 if display ==1 
     %Cloche T-S
     Tk=374.15; %[°C] Point triple de l'eau
@@ -177,23 +240,20 @@ if display ==1
     end    
     
     % 1-2
-    t1_2=linespace(p1,p2,50);
+    t1_2=linespace(p1,p8,50);
     s1_2=zeros(size(t1_2));
     h1_2=zeros(size(t1_2));
     for i=1:length(t1_2)
         p2_p=p1*p3/p4;
         h2s_p=XSteam('h_ps',h2s_p,s1);
         h1_2(i)=h1+1/options.eta_SiC*(h2s_p-h1);
-        s1_2(i)=XSteam('s_ph',p2,h2);
-        t2=XSteam('T_ph',p2,h2);
+        s1_2(i)=XSteam('s_ph',p8,h8);
+        t2=XSteam('T_ph',p8,h8);
 
     end
 
     
 end
-
-
-
 
 function dhdp = dComp(p,h)
     v=XSteam('v_ph',p,h);
@@ -202,6 +262,59 @@ end
 function dhdp= dTurb(p,h,SiT)
     v=XSteam('v_ph',p,h);
     dhdp=v*SiT;
+end
+
+% Funtions
+    function [ti,pi,hi,si,xi] = expansion(eta_SiT,t_in,p_in,h_in,s_in,x_in,p_out,nsout)
+        % ti,pi,hi,si,xi: state of the feed-heatings
+        
+        % "main" expansion
+        s_outs=s_in;
+        h_outs=XSteam('h_ps',p_out,s_outs);
+        h_out= h_in + eta_SiT*(h_outs - h_in);
+        t_out= XSteam('t_ph',p_out,h_out);
+        s_out= XSteam('s_ph',p_out,h_out);
+        x_out= XSteam('x_ps',p_out,s_out);
+        
+        % Feed-heatings
+        step_h=(h_out-h_in)/(nsout+1);
+        hi=h_in:step_h:h_out;
+        % Prealocations
+        ti=zeros(size(hi));
+        pi=zeros(size(hi));
+        si=zeros(size(hi));
+        xi=zeros(size(hi));
+        
+        ti(1)=t_in;
+        ti(end)=t_out;
+        pi(1)=p_in;
+        pi(end)=p_out;
+        xi(1)=x_in;
+        xi(end)=x_out;
+        si(1)=s_in;
+        si(end)=s_out;
+        
+        if nsout > 0
+            for i=1:nsout
+                [ti(i+1),pi(i+1),si(i+1),xi(i+1)]=expan_i(eta_SiT,hi(i+1),hi(1),si(1));
+            end
+        end
+    end
+              
+
+function [t_out,p_out,s_out,x_out]=expan_i(eta_SiT,h_out,h_init,s_i)
+% Compute the intermediate states of the feed-heatings
+
+h_outs=(h_out-(1-eta_SiT)*h_init)/(eta_SiT);
+s_outs=s_i;
+p_out=XSteam('p_hs',h_outs,s_outs);
+t_out=XSteam('t_ph',p_out,h_ii);
+s_out=XSteam('s_ph',p_out,h_ii);
+x_out = XSteam('x_ps',p_out,s_out);
+
+if x_out < 0.88
+    disp('The turbine can only work with x < 0.88')
+end
 end
 
 end

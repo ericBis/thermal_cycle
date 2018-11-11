@@ -78,14 +78,14 @@ p_atm=1.01325; % [bar] pressure of the atmosphere
 [~, xa_out, ~, ha_out, ~, ~, ~] = Psychrometrics('Tdb',Ta_out,'phi',Phi_out*100);
 
 %water caracteristics
-te1=Ta_in+Tpinch;
+%te1=Triver+Tpinch;
 te2=Tw_in;
 te3=Tw_out;
 te4=Triver;
-he1=XSteam('h_pT',p_atm,te1);
-he2=XSteam('h_pT',p_atm,te2);
-he3=XSteam('h_pT',p_atm,te3);
-he4=XSteam('h_pT',p_atm,te4);
+%he1=XSteam('h_pT',p_atm,te1);
+he2=XSteam('hL_T',te2);
+he3=XSteam('hL_T',te3);
+he4=XSteam('hL_T',te4);
 
 %massflows
 m_as=P_w*1e3/(ha_out-ha_in);
@@ -94,6 +94,10 @@ me2=P_w/(he3-he2);
 me3=me2;
 me4=m_evap;
 me1=me3-m_evap;
+
+%water state 1 caracteristics
+he1=(me2*he2-me4*he4)/me1;
+te1=XSteam('T_ph',1,he1);
 
 % Outputs
 DAT_AIR = [Ta_in Ta_out ; ha_in ha_out ; xa_in xa_out ; Phi_atm Phi_out];

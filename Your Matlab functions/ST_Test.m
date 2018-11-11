@@ -1,4 +1,4 @@
-%% Simple Rankine-Hirn
+%% Test de ST
 P_e=35; % [kW]
 options= struct;
 options.nsout=0; %   [-] : Number of feed-heating 
