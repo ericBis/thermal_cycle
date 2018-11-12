@@ -147,6 +147,8 @@ end
 %
 nsout=options.nsout;
 eta_SiT=options.eta_SiT;
+TpinchSub=options.TpinchSub;
+TpinchEx=options.TpinchEx;
 
 %Prealocations
 t6=zeros(nsout+1,1);
@@ -218,6 +220,15 @@ s8=XSteam('s_ph',p8,h8);
 x8=XSteam('x_ph',p8,h8);
 t8=XSteam('T_ph',p8,h8);
 e8=(h8-h0)-T_0*(s8-s0);
+
+% Etat(s) 7 et 9
+[tw,hw,pw,sw,T9,h9,p9,s9,Xbled] = states7_9(h6,p6,p8,t8,h8);
+
+
+
+
+
+
 
 % Plots
 if display ==1 
@@ -297,7 +308,6 @@ end
         end
     end
               
-
 function [t_out,p_out,s_out,x_out]=expan_i(eta_SiT,h_out,h_init,s_i)
 % Compute the intermediate states of the feed-heatings
 
@@ -312,5 +322,90 @@ if x_out < 0.88
     disp('The turbine can only work with x < 0.88')
 end
 end
+
+    function [t_w,h_w,p_w,s_w,t_9,h_9,p_9,s_9,Xbled] = states7_9(h6,p6,p8,t8,h8)
+        %Computes the datas of states 7 and 9 and the rates X
+        
+        ns=length(h6); % Number of feed-heating used to warm up the water
+        %Prealocations
+        t_9=zeros(ns+1,1);
+        p_9=zeros(ns+1,1);
+        s_9=zeros(ns+1,1);
+        h_9=zeros(ns+1,1);
+        t_w=zeros(ns,1);
+        p_w=zeros(ns,1);
+        s_w=zeros(ns,1);
+        h_w=zeros(ns,1);
+        
+        p_9(1:end)=p8;
+        
+        for i=1:ns
+            p_w(i)=p6(i); % State 7
+            t_w(i)=XSteam('tsat_p',p_w(i));
+            h_w(i)=XSteam('hL_p',p_w(i));
+            s_w(i)=XSteam('sL_p',p_w(i));            
+            t_9(i+1)=t_w(i)-TpinchEx; %State 9
+            h_9(i+1)=XSteam('h_pT',p_9(i+1),t_9(i+1));
+            s_9(i+1)=XSteam('s_pT',p_9(i+1),t_9(i+1));
+        end
+        
+        % State sc : Between the subcooler and the Condensor
+        tsc=T_heat_in+TpinchSub;
+        psc=p_w(1);
+        hsc=XSteam('h_pt',psc,tsc);
+        
+        % Computations of the X
+        % They can be computed by resolving a linear system of type Ax=B
+        % Here x= [h9_0 X_I X_II ... X_N]
+        
+        A=zeros(ns+1,ns+1);
+        A(end-1,1)=1;
+        A(end,1)=-1;
+        A(end,2:end)=h_w(1)-hsc;
+        
+        %Filling A
+        k=ns+1;
+        for i=2:ns
+            A(i,k:end)=h_w(k-1)-h_w(k-2);
+            k=k-1;
+        end
+        
+        k=ns+1;
+        for i=1:ns
+            A(i,k)=h6(k-1)-h_w(k-2);
+            k=k-1;
+        end
+        
+        B=zeros(ns+1,1);
+        B(end-1)=h_9(2);
+        B(end)=-h8;
+        
+        k=ns;
+        for i=1:ns-1
+            B(i)=h_9(ns+1)-h_9(ns);
+            k=k-1;
+        end
+        
+        x=A\B;
+        h_9=x(1);
+        t_9(1)=XSteam('t_ph',p8,h_9);
+        s_9(1)=XSteam('s_ph',p8,h_9);
+        Xbled=x(2:end);       
+    end
+        
+     function [LHV,h_f,e_f,lambda,cp_g,comp_fum,h_fum,h_air,ma1] = combustion(comb)
+        x=comb.x;
+        y=comb.y;
+        ma1=(1+(y-2*x)/4)*(32+3.76*28.15)/(12.01+1.008*y+16*x);
+        LHV=
+     end
+ 
+    function LHV =getLHV(y,x)
+formuleEmpirique=393400+102250*y-(x/(1+0.5*y))*(111000+102250*y);
+LHV=formuleEmpirique/(MasseMolaireCombustible(y,x));%donne le PCI en kJ/kgComb de type CHyOx c'est un scalaire
+end
+               
+
+    end
 
 end
