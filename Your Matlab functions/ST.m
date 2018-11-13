@@ -109,11 +109,11 @@ if nargin<3
             P_e = 35; % [kW] Puissance énergétique de l'installation
         end
         options= struct;
-        options.nsout=2; %   [-] : Number of feed-heating
+        options.nsout=7; %   [-] : Number of feed-heating
         options.reheat=0; %    [-] : Number of reheating
-        options.T_max=520; %     [°C] : Maximum steam temperature
-        options.T_cond_out=30; %[°C] : Condenseur cold outlet temperature
-        options.p3_hp=4e6; %     [bar] : Maximum pressure
+        options.T_max=565; %     [°C] : Maximum steam temperature
+        options.T_cond_out=27; %[°C] : Condenseur cold outlet temperature
+        options.p3_hp=31e6; %     [bar] : Maximum pressure
         options.drumFlag=0; %   [-] : if =1 then drum if =0 => no drum.
         options.eta_mec=0.98; %    [-] : mecanic efficiency of shafts bearings
         % options.comb is a structure containing combustion data :
@@ -122,12 +122,12 @@ if nargin<3
         options.comb.x=0; %         [-] : the ratio O_x/C. Example 0.05 in CH_1.2O_0.05
         options.comb.y=0; %         [-] : the ratio H_y/C. Example 1.2 in CH_1.2O_0.05
         options.T_exhaust=0; %  [°C] : Temperature of exhaust gas out of the chimney
-        options.p_3=1050e3; %        [-] : High pressure after last reheating
-        options.x4=0.91; %         [-] : Vapor ratio [gaseous/liquid] (in french : titre)
+        options.p_3=7e6; %        [-] : High pressure after last reheating
+        options.x4=0.99; %         [-] : Vapor ratio [gaseous/liquid] (in french : titre)
         options.T_0=15; %        [°C] : Reference temperature
         options.TpinchSub=0; %  [°C] : Temperature pinch at the subcooler
         options.TpinchEx=0; %   [°C] : Temperature pinch at a heat exchanger
-        options.TpinchCond=3; % [°C] : Temperature pinch at condenser
+        options.TpinchCond=5; % [°C] : Temperature pinch at condenser
         options.Tdrum=0; %      [°C] : minimal drum temperature
         options.eta_SiC=0.85; %     [-] : Isotrenpic efficiency for compression
         options.eta_SiT=0.88; %     [-] : Isotrenpic efficiency for Turbine. It can be a vector of 2 values :
@@ -181,12 +181,12 @@ e4=(h4-h0)-T_0*(s4-s0);
 %Etat 5
 if options.reheat==1
     t5=t3;
-    p5=options.p_3;
+    p5=options.p_3*1e-5;
     h5=XSteam('h_pT',p5,t5);
     s5=XSteam('s_pT',p5,t5);
     e5=(h5-h0)-T_0*(s5-s0);
     x5=nan;
-else
+else % Etat 4 = Etat 5
     t5=t4;
     p5=p4;
     h5=h4;
@@ -196,7 +196,7 @@ else
 end
 
 %Etat 7
-t7=30;%options.T_cond_out+options.TpinchCond;
+t7=options.T_cond_out+options.TpinchCond;
 p7=XSteam('psat_T',t7);
 h7=XSteam('hL_T',t7);
 s7=XSteam('sL_T',t7);
@@ -213,7 +213,7 @@ x6=flip(x_i);
 e6=(h6-h0)-T_0*(s6-s0);
 
 %Etat 8
-p8=44; % [bar] ATTENTION VALEUR TEMPORERE
+p8=4.6; % [bar] ATTENTION VALEUR TEMPORERE
 h8s=XSteam('h_ps',p8,s7);
 h8=h7+1/options.eta_SiC*(h8s-h7);
 s8=XSteam('s_ph',p8,h8);
@@ -258,9 +258,7 @@ if display ==1
         s1_2(i)=XSteam('s_ph',p8,h8);
         t2=XSteam('T_ph',p8,h8);
 
-    end
-
-    
+    end    
 end
 
 function dhdp = dComp(p,h)
@@ -351,7 +349,7 @@ end
         end
         
         % State sc : Between the subcooler and the Condensor
-        tsc=T_heat_in+TpinchSub;
+        tsc=t8+TpinchSub;
         psc=p_w(1);
         hsc=XSteam('h_pt',psc,tsc);
         
@@ -371,9 +369,9 @@ end
             k=k-1;
         end
         
-        k=ns+1;
+        k=ns;
         for i=1:ns
-            A(i,k)=h6(k-1)-h_w(k-2);
+            A(i,k)=h6(k)-h_w(k);
             k=k-1;
         end
         
@@ -408,4 +406,4 @@ end
                
     end
 
-end
+ 

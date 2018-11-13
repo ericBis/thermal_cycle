@@ -109,11 +109,11 @@ if nargin<3
             P_e = 35; % [kW] Puissance énergétique de l'installation
         end
         options= struct;
-        options.nsout=2; %   [-] : Number of feed-heating
+        options.nsout=7; %   [-] : Number of feed-heating
         options.reheat=0; %    [-] : Number of reheating
-        options.T_max=520; %     [°C] : Maximum steam temperature
-        options.T_cond_out=30; %[°C] : Condenseur cold outlet temperature
-        options.p3_hp=4e6; %     [bar] : Maximum pressure
+        options.T_max=565; %     [°C] : Maximum steam temperature
+        options.T_cond_out=27; %[°C] : Condenseur cold outlet temperature
+        options.p3_hp=31e6; %     [bar] : Maximum pressure
         options.drumFlag=0; %   [-] : if =1 then drum if =0 => no drum.
         options.eta_mec=0.98; %    [-] : mecanic efficiency of shafts bearings
         % options.comb is a structure containing combustion data :
@@ -123,11 +123,11 @@ if nargin<3
         options.comb.y=0; %         [-] : the ratio H_y/C. Example 1.2 in CH_1.2O_0.05
         options.T_exhaust=0; %  [°C] : Temperature of exhaust gas out of the chimney
         options.p_3=1050e3; %        [-] : High pressure after last reheating
-        options.x4=0.91; %         [-] : Vapor ratio [gaseous/liquid] (in french : titre)
+        options.x4=0.99; %         [-] : Vapor ratio [gaseous/liquid] (in french : titre)
         options.T_0=15; %        [°C] : Reference temperature
         options.TpinchSub=0; %  [°C] : Temperature pinch at the subcooler
         options.TpinchEx=0; %   [°C] : Temperature pinch at a heat exchanger
-        options.TpinchCond=3; % [°C] : Temperature pinch at condenser
+        options.TpinchCond=5; % [°C] : Temperature pinch at condenser
         options.Tdrum=0; %      [°C] : minimal drum temperature
         options.eta_SiC=0.85; %     [-] : Isotrenpic efficiency for compression
         options.eta_SiT=0.88; %     [-] : Isotrenpic efficiency for Turbine. It can be a vector of 2 values :
@@ -181,12 +181,12 @@ e4=(h4-h0)-T_0*(s4-s0);
 %Etat 5
 if options.reheat==1
     t5=t3;
-    p5=options.p_3;
+    p5=options.p_3*1e-5;
     h5=XSteam('h_pT',p5,t5);
     s5=XSteam('s_pT',p5,t5);
     e5=(h5-h0)-T_0*(s5-s0);
     x5=nan;
-else
+else % Etat 4 = Etat 5
     t5=t4;
     p5=p4;
     h5=h4;
@@ -222,13 +222,14 @@ t8=XSteam('T_ph',p8,h8);
 e8=(h8-h0)-T_0*(s8-s0);
 
 % Etat(s) 7 et 9
-[tw,hw,pw,sw,T9,h9,p9,s9,Xbled] = states7_9(h6,p6,p8,t8,h8);
+[tw,hw,pw,sw,t9,h9,p9,s9,Xbled] = states7_9(h6,p6,p8,t8,h8);
 
-
-
-
-
-
+t7= [t7 ; tw];
+p7= [p7 ; pw];
+h7= [h7 ; hw];
+s7= [s7 ; sw];
+e7= [e7 ; (h7-h0)-T_0*(s7-s0)];
+x9=zeros(size(t9));
 
 % Plots
 if display ==1 
@@ -257,9 +258,7 @@ if display ==1
         s1_2(i)=XSteam('s_ph',p8,h8);
         t2=XSteam('T_ph',p8,h8);
 
-    end
-
-    
+    end    
 end
 
 function dhdp = dComp(p,h)
@@ -307,21 +306,21 @@ end
             end
         end
     end
-              
-function [t_out,p_out,s_out,x_out]=expan_i(eta_SiT,h_out,h_init,s_i)
-% Compute the intermediate states of the feed-heatings
 
-h_outs=(h_out-(1-eta_SiT)*h_init)/(eta_SiT);
-s_outs=s_i;
-p_out=XSteam('p_hs',h_outs,s_outs);
-t_out=XSteam('t_ph',p_out,h_out);
-s_out=XSteam('s_ph',p_out,h_out);
-x_out = XSteam('x_ps',p_out,s_out);
-
-if x_out < 0.88
-    disp('The turbine can only work with x < 0.88')
-end
-end
+    function [t_out,p_out,s_out,x_out]=expan_i(eta_SiT,h_out,h_init,s_i)
+        % Compute the intermediate states of the feed-heatings
+        
+        h_outs=(h_out-(1-eta_SiT)*h_init)/(eta_SiT);
+        s_outs=s_i;
+        p_out=XSteam('p_hs',h_outs,s_outs);
+        t_out=XSteam('t_ph',p_out,h_out);
+        s_out=XSteam('s_ph',p_out,h_out);
+        x_out = XSteam('x_ps',p_out,s_out);
+        
+        if x_out < 0.88
+            disp('The turbine can only work with x < 0.88')
+        end
+    end
 
     function [t_w,h_w,p_w,s_w,t_9,h_9,p_9,s_9,Xbled] = states7_9(h6,p6,p8,t8,h8)
         %Computes the datas of states 7 and 9 and the rates X
@@ -343,14 +342,14 @@ end
             p_w(i)=p6(i); % State 7
             t_w(i)=XSteam('tsat_p',p_w(i));
             h_w(i)=XSteam('hL_p',p_w(i));
-            s_w(i)=XSteam('sL_p',p_w(i));            
+            s_w(i)=XSteam('sL_p',p_w(i));
             t_9(i+1)=t_w(i)-TpinchEx; %State 9
             h_9(i+1)=XSteam('h_pT',p_9(i+1),t_9(i+1));
             s_9(i+1)=XSteam('s_pT',p_9(i+1),t_9(i+1));
         end
         
         % State sc : Between the subcooler and the Condensor
-        tsc=T_heat_in+TpinchSub;
+        tsc=t8+TpinchSub;
         psc=p_w(1);
         hsc=XSteam('h_pt',psc,tsc);
         
@@ -370,9 +369,9 @@ end
             k=k-1;
         end
         
-        k=ns+1;
+        k=ns;
         for i=1:ns
-            A(i,k)=h6(k-1)-h_w(k-2);
+            A(i,k)=h6(k)-h_w(k);
             k=k-1;
         end
         
@@ -390,22 +389,21 @@ end
         h_9=x(1);
         t_9(1)=XSteam('t_ph',p8,h_9);
         s_9(1)=XSteam('s_ph',p8,h_9);
-        Xbled=x(2:end);       
+        Xbled=x(2:end);
     end
-        
-     function [LHV,h_f,e_f,lambda,cp_g,comp_fum,h_fum,h_air,ma1] = combustion(comb)
+
+    function [LHV,h_f,e_f,lambda,cp_g,comp_fum,h_fum,h_air,ma1] = combustion(comb)
         x=comb.x;
         y=comb.y;
         ma1=(1+(y-2*x)/4)*(32+3.76*28.15)/(12.01+1.008*y+16*x);
-        LHV=
-     end
- 
-    function LHV =getLHV(y,x)
-formuleEmpirique=393400+102250*y-(x/(1+0.5*y))*(111000+102250*y);
-LHV=formuleEmpirique/(MasseMolaireCombustible(y,x));%donne le PCI en kJ/kgComb de type CHyOx c'est un scalaire
-end
-               
-
+        LHV=getLHV(y,x);
+        
     end
 
-end
+    function LHV =getLHV(y,x)
+        LHV=393400+102250*y-(x/(1+0.5*y))*(111000+102250*y)/(12+y+x*16);
+    end
+               
+    end
+
+ 
