@@ -109,10 +109,10 @@ if nargin<3
             P_e = 35; % [kW] Puissance énergétique de l'installation
         end
         options= struct;
-        options.nsout=7; %   [-] : Number of feed-heating
-        options.reheat=0; %    [-] : Number of reheating
+        options.nsout=8; %   [-] : Number of feed-heating
+        options.reheat=1; %    [-] : Number of reheating
         options.T_max=565; %     [°C] : Maximum steam temperature
-        options.T_cond_out=27; %[°C] : Condenseur cold outlet temperature
+        options.T_cond_out=28; %[°C] : Condenseur cold outlet temperature
         options.p3_hp=31e6; %     [bar] : Maximum pressure
         options.drumFlag=0; %   [-] : if =1 then drum if =0 => no drum.
         options.eta_mec=0.98; %    [-] : mecanic efficiency of shafts bearings
@@ -205,15 +205,27 @@ x7=0;
 
 %Etat(s) 6
 [t_i,p_i,h_i,s_i,x_i] = expansion(eta_SiT(end),t5,p5,h5,s5,x5,p7,nsout-1);
-t6=flip(t_i);
-p6=flip(p_i);
-h6=flip(h_i);
-s6=flip(s_i);
-x6=flip(x_i);
+t6=[ flip(t_i(2:end)) t4];
+p6=[ flip(p_i(2:end)) p4];
+h6=[ flip(h_i(2:end)) h4];
+s6=[ flip(s_i(2:end)) s4];
+x6=[ flip(x_i(2:end)) x4];
 e6=(h6-h0)-T_0*(s6-s0);
 
+    if options.drumFlag==1
+        ind_drum=1;
+        t_sat=XSteam('Tsat_p',p6(ind_drum));
+        while t_sat < options.Tdrum 
+            ind_drum=ind_drum+1;
+            t_sat=XSteam('Tsat_p',p6(ind_drum));
+        end
+        p8=p6(ind_drum);
+    else  % CHECK COMMENT DETERMINER P8
+        p8=4.6; % [bar] ATTENTION VALEUR TEMPORERE
+    end
+
 %Etat 8
-p8=4.6; % [bar] ATTENTION VALEUR TEMPORERE
+%p8=4.6; % [bar] ATTENTION VALEUR TEMPORERE
 h8s=XSteam('h_ps',p8,s7);
 h8=h7+1/options.eta_SiC*(h8s-h7);
 s8=XSteam('s_ph',p8,h8);
@@ -222,12 +234,46 @@ t8=XSteam('T_ph',p8,h8);
 e8=(h8-h0)-T_0*(s8-s0);
 
 % Etat(s) 7 et 9
-[tw,hw,pw,sw,t9,h9,p9,s9,Xbled] = states7_9(h6,p6,p8,t8,h8);
 
-t7= [t7 ; tw];
-p7= [p7 ; pw];
-h7= [h7 ; hw];
-s7= [s7 ; sw];
+    if options.drumFlag==1 % If there's a drum, we focus on the pre-drum feed_heatings
+        p_feed=p6(2:ind_drum-1);
+        h_feed=h6(2:ind_drum-1);
+    else
+        p_feed=p6(2:end);
+        h_feed=h6(2:end);
+    end
+
+    %Before the drum
+[t_fs,h_fs,p_fs,s_fs,t9,t9,t9,s9,Xbled] = states7_9_pre_drum(h_feed,p_feed,p8,t8,h8);
+
+    if options.drumFlag==1
+        t7=[t7 ; t_fs ; XSteam('Tsat_p',p(ind_drum))];
+        p7=[p7 ; p_fs ; p(ind_drum)];
+        h7=[h7; h_fs ; XSteam('hL_p',p(ind_drum))];
+        s7=[s7 ; s_fs ; XSteam('sL_p',p(ind_drum))];
+    else
+         t7=[t7 ; t_fs ];
+        p7=[p7 ; p_fs ];
+        h7=[h7; h_fs ];
+        s7=[s7 ; s_fs];
+    end
+    x7=zeros(size(t7));
+    
+    % After the drum if there's one
+    if options.drumFlag==1
+        p_feed=p6(ind_drum+1:end);
+        h_feed=h6(ind_drum+1:end);
+        
+        
+        
+    end
+    
+    
+
+% t7= [t7 ; tw];
+% p7= [p7 ; pw];
+% h7= [h7 ; hw];
+% s7= [s7 ; sw];
 e7= [e7 ; (h7-h0)-T_0*(s7-s0)];
 x9=zeros(size(t9));
 
@@ -322,7 +368,7 @@ end
         end
     end
 
-    function [t_w,h_w,p_w,s_w,t_9,h_9,p_9,s_9,Xbled] = states7_9(h6,p6,p8,t8,h8)
+    function [t_w,h_w,p_w,s_w,t_9,h_9,p_9,s_9,Xbled] = states7_9_pre_drum(h6,p6,p8,t8,h8)
         %Computes the datas of states 7 and 9 and the rates X
         
         ns=length(h6); % Number of feed-heating used to warm up the water
@@ -360,7 +406,7 @@ end
         A=zeros(ns+1,ns+1);
         A(end-1,1)=1;
         A(end,1)=-1;
-        A(end,2:end)=h_w(1)-hsc;
+        A(end,2:end)=hsc-h_w(1);
         
         %Filling A
         k=ns+1;
@@ -371,7 +417,7 @@ end
         
         k=ns;
         for i=1:ns
-            A(i,k)=h6(k)-h_w(k);
+            A(i,k+1)=h6(k)-h_w(k);
             k=k-1;
         end
         
@@ -381,14 +427,14 @@ end
         
         k=ns;
         for i=1:ns-1
-            B(i)=h_9(ns+1)-h_9(ns);
+            B(i)=h_9(k+1)-h_9(k);
             k=k-1;
         end
         
         x=A\B;
-        h_9=x(1);
-        t_9(1)=XSteam('t_ph',p8,h_9);
-        s_9(1)=XSteam('s_ph',p8,h_9);
+        h_9(1)=x(1);
+        t_9(1)=XSteam('t_ph',p8,h_9(1));
+        s_9(1)=XSteam('s_ph',p8,h_9(1));
         Xbled=x(2:end);
     end
 
