@@ -60,10 +60,24 @@ function [ETA MASSFLOW] = CCGT3P(P_eg,options,display)
 if nargin<3
     display=1;
    if nargin<2
-       options=struct();
+        options=struct();
        if nargin<1
            P_eg=100e3;%100MW
        end
+       %%%%%DESCRIPTION DE LA STRUCTURE%%%%%
+        options=struct;
+        %options.T0=       %[°C] : Reference temperature
+        %options.T_ext=    %[°C] : External temperature
+        %options.T_STmax=  %[°C] : maximum temperature on ST cycle
+        %options.eta_mec=  %[-] : mecanic efficiency of shafts bearings
+        %options.pdrum=    %[bar]: Drum pressure
+        %options.pmid=     %[bar]: Intermediary pressure level
+        %options.x7=       %[-] : Vapor ratio [gaseous/liquid] (titre)
+        %option.eta_SiC=   %[-] : Isotrenpic efficiency for compression
+        %option.eta_SiT=   %[-] : Isotrenpic efficiency for compression
+        %options.GT=       %[struct]
+       
+       
    end
 end
 
@@ -73,4 +87,6 @@ else
     T_0 = 15; % [°C]
 end
 
+%%%%%VARIABLES INPUT%%%%%
+Peg=P_eg;
 end
