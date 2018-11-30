@@ -128,7 +128,7 @@ if nargin<3
         options.TpinchSub=0; %  [°C] : Temperature pinch at the subcooler
         options.TpinchEx=0; %   [°C] : Temperature pinch at a heat exchanger
         options.TpinchCond=5; % [°C] : Temperature pinch at condenser
-        options.Tdrum=148; %      [°C] : minimal drum temperature
+        options.Tdrum=148.7; %      [°C] : minimal drum temperature
         options.eta_SiC=0.85; %     [-] : Isotrenpic efficiency for compression
         options.eta_SiT=[0.9271 0.8874]; %     [-] : Isotrenpic efficiency for Turbine. It can be a vector of 2 values :
         %             	             eta_SiT(1)=eta_SiT_HP,eta_SiT(2)=eta_SiT_others
@@ -144,11 +144,16 @@ else
     T_0 = 288.15;  % [éC]
 end
 
+if ~isfield(options,'drumFlag')    
+   options.drumFlag=1;
+end
+
 %
 nsout=options.nsout;
 eta_SiT=options.eta_SiT;
 TpinchSub=options.TpinchSub;
 TpinchEx=options.TpinchEx;
+eta_SiC=options.eta_SiC;
 
 %Prealocations
 t6=zeros(nsout+1,1);
@@ -212,17 +217,20 @@ s6=[ flip(s_i(2:end)) s4];
 x6=[ flip(x_i(2:end)) x4];
 e6=(h6-h0)-T_0*(s6-s0);
 
-if options.drumFlag==1
-    ind_drum=1;
-    t_sat=XSteam('Tsat_p',p6(ind_drum));
-    while t_sat < options.Tdrum % Trouve le soutirage allant jusqu'au drum
-        ind_drum=ind_drum+1;
+    if options.drumFlag==1
+        ind_drum=1;
         t_sat=XSteam('Tsat_p',p6(ind_drum));
+        while t_sat < options.Tdrum % Trouve le soutirage allant jusqu'au drum
+            ind_drum=ind_drum+1;
+            t_sat=XSteam('Tsat_p',p6(ind_drum));
+        end
+        p8=XSteam('psat_T',options.Tdrum);
+    else  % If there's no drum
+        NPSH_no_drum=4; % [m]
+            secu_marg=1.5; % Margin factor of the NPSH
+            rho_eau=1e3; % [kg/m^3]
+            p8=p6(end)+ rho_eau*9.81*(NPSH_no_drum+secu_marg)*1e-5; 
     end
-    p8=p6(ind_drum);
-else  % CHECK COMMENT DETERMINER P8
-    p8=4.6; % [bar] ATTENTION VALEUR TEMPORERE
-end
 
 %Etat 8
 [t8,h8,s8,x8,e8] = compression(options.eta_SiC,p8,h7(1),s7(1));
@@ -238,13 +246,14 @@ else
 end
 
 %Before the drum
-[t_fs,h_fs,p_fs,s_fs,t9,t9,t9,s9,Xbled] = states7_9_pre_drum(h_feed,p_feed,p8,t8,h8);
+[t_fs,h_fs,p_fs,s_fs,t9,h9,p9,s9,Xbled] = states7_9_pre_drum(h_feed,p_feed,p8,t8,h8);
 
 if options.drumFlag==1
-    t7=[t7 ; t_fs ; XSteam('Tsat_p',p6(ind_drum))];
-    p7=[p7 ; p_fs ; p6(ind_drum)];
-    h7=[h7; h_fs ; XSteam('hL_p',p6(ind_drum))];
-    s7=[s7 ; s_fs ; XSteam('sL_p',p6(ind_drum))];
+    p_drum=XSteam('psat_T',options.Tdrum);
+    t7=[t7 ; t_fs ; options.Tdrum];
+    p7=[p7 ; p_fs ; p_drum];
+    h7=[h7; h_fs ; XSteam('hL_p',p_drum)];
+    s7=[s7 ; s_fs ; XSteam('sL_p',p_drum)];
 else
     t7=[t7 ; t_fs ];
     p7=[p7 ; p_fs ];
@@ -255,7 +264,7 @@ end
 if options.drumFlag==1
     p_feed=p6(ind_drum+1:end);
     h_feed=h6(ind_drum+1:end);
-    [t_w,h_w,p_w,s_w,t_9,h_9,p_9,s_9,Xbled] = states7_9_post_drum(h_feed,p_feed,h7(end),s7(end));
+    [t_w,h_w,p_w,s_w,t_9,h_9,p_9,s_9,Xbled2] = states7_9_post_drum(h_feed,p_feed,h7(end),s7(end));
     
     t7=[t7 ; t_w ];
     p7=[p7 ; p_w ];
@@ -266,6 +275,7 @@ if options.drumFlag==1
     p9=[p9 ; p_9 ];
     h9=[h9; h_9];
     s9=[s9 ; s_9];
+    Xbled = [Xbled ; Xbled2];
 end
 e7= [e7 ; (h7-h0)-T_0*(s7-s0)];
 e9= [e7 ; (h7-h0)-T_0*(s7-s0)];
@@ -282,6 +292,16 @@ x1=0;
 % Etat 2
 p2=p3;
 [t2,h2,s2,x2,e2] = compression(eta_SiC,p2,h1,s1);
+
+% X
+
+if options.drumFlag==1 
+    
+else
+    
+end
+
+
 
 % Plots
 if display ==1
@@ -335,7 +355,7 @@ end
         h_out= h_in + eta_SiT*(h_outs - h_in); % Real expansion
         t_out= XSteam('t_ph',p_out,h_out);
         s_out= XSteam('s_ph',p_out,h_out);
-        x_out= XSteam('x_ps',p_out,s_out);
+        x_out= XSteam('x_ph',p_out,h_out);
         
         % Feed-heatings
         step_h=(h_out-h_in)/(nsout+1); 
@@ -370,8 +390,7 @@ end
        s2=XSteam('s_ph',p2,h2);
        x2=XSteam('x_ph',p2,h2);
        t2=XSteam('T_ph',p2,h2);
-       e2=(h2-h0)-T_0*(s2-s0);
-        
+       e2=(h2-h0)-T_0*(s2-s0);        
     end
 
     function [t_out,p_out,s_out,x_out]=expan_inter(eta_SiT,h_out,h_init,s_i)
@@ -423,7 +442,7 @@ end
         hsc=XSteam('h_pt',psc,tsc);
         
         % Computations of the X
-        % They can be computed by resolving a linear system of type Ax=B
+        % They can be compbuted by resolving a linear system of type Ax=B
         % Here x= [h9_0 X_I X_II ...]
         
         A=zeros(ns+1,ns+1);
@@ -462,8 +481,8 @@ end
     end
 
 function [t_w,h_w,p_w,s_w,t_9,h_9,p_9,s_9,Xbled] = states7_9_post_drum(h6,p6,h_bef,s_bef)
-        %Computes the datas of states 7 and 9 and the rates X after the
-        %drum
+        % Computes the datas of states 7 and 9 and the rates X after the
+        % drum
         
         ns=length(h6); % Number of feed-heating used to warm up the water
         %Prealocations
@@ -486,11 +505,11 @@ function [t_w,h_w,p_w,s_w,t_9,h_9,p_9,s_9,Xbled] = states7_9_post_drum(h6,p6,h_b
             t_9(i+1)=t_w(i)- max(TpinchEx,TpinchSub); %State 9
         end
         
-        NPSH=3; %[m]
+        NPSH=4; %[m]
         secu_margin=1.5; % Margin factor of the NPSH
-        t_worst=t_9(end); % Worst case scenario temperature
+        t_Pa=t_9(end); % [°C] Temperature at the pump Pa
         rho=1e3; % [kg/m^3]
-        p_sat=XSteam('psat_T',t_worst);
+        p_sat=XSteam('psat_T',t_Pa);
         g=9.81; % [m/s^2]
         p_9(1:end)=p_sat+ rho*g*(NPSH+secu_margin)*1e-5; 
         
@@ -501,7 +520,6 @@ function [t_w,h_w,p_w,s_w,t_9,h_9,p_9,s_9,Xbled] = states7_9_post_drum(h6,p6,h_b
         
         % Compression at Pb
         [t_9(1),h_9(1),s_9(1),~,~] = compression(options.eta_SiC,p_9(1),h_bef,s_bef);
-
         
 
         % Computations of the X
@@ -525,15 +543,15 @@ function [t_w,h_w,p_w,s_w,t_9,h_9,p_9,s_9,Xbled] = states7_9_post_drum(h6,p6,h_b
         
         B=zeros(ns,1);         
         k=ns;
+        
         for i=1:ns
             B(i)=h_9(k+1)-h_9(k);
             k=k-1;
         end
         
-        x=A\B;
+        Xbled=A\B;
         t_9(1)=XSteam('t_ph',p_9(1),h_9(1));
         s_9(1)=XSteam('s_ph',p_9(1),h_9(1));
-        Xbled=x(2:end);
     end
 
     function [LHV,h_f,e_f,lambda,cp_g,comp_fum,h_fum,h_air,ma1] = combustion(comb)
