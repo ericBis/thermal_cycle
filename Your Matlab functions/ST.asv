@@ -560,7 +560,8 @@ end
         % Xbled2: X_i after the drum
         
         if drumFlag == 1
-            A=zeros(4,4);           
+            A=zeros(4,4);
+           
             A(1,1:end)=[sum(Xbled2)*(h7(ind_drum+1)-h7(ind_drum))...
                 0 0 h6(ind_drum)-h7(ind_drum)];
             A(2,1:end)=[sum(Xbled2)-Xbled2(end) -1 0 1];
@@ -582,7 +583,7 @@ end
             
             B=[Xbled1(end) ; sum(Xbled1)-Xbled1(end) ; 1 - sum(Xbled1)];
             
-            x=A\B;            
+                        x=A\B;            
             X3=x(1);
             X5=x(2);
             X6=x(3);
