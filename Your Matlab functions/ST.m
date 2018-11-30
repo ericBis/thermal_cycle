@@ -106,16 +106,15 @@ if nargin<3
     if nargin<2
         options = struct();
         if nargin<1
-            P_e = 35; % [kW] Puissance énergétique de l'installation
+            P_e = 35e3; % [kW] Puissance énergétique de l'installation
         end
-        options= struct;
-        options.nsout=8; %   [-] : Number of feed-heating
-        options.reheat=1; %    [-] : Number of reheating
-        options.T_max=565; %     [°C] : Maximum steam temperature
-        options.T_cond_out=28; %[°C] : Condenseur cold outlet temperature
-        options.p3_hp=31e6; %     [bar] : Maximum pressure
-        options.drumFlag=1; %   [-] : if =1 then drum if =0 => no drum.
-        options.eta_mec=0.98; %    [-] : mecanic efficiency of shafts bearings
+        options.nsout=8; %   [-] : Number of feed-heating %%
+        options.reheat=1; %    [-] : Number of reheating %%
+        options.T_max=565; %     [°C] : Maximum steam temperature %%
+        options.T_cond_out=28; %[°C] : Condenseur cold outlet temperature %%
+        options.p3_hp=31e6; %     [bar] : Maximum pressure  %%
+        options.drumFlag=1; %   [-] : if =1 then drum if =0 => no drum.  %%
+        options.eta_mec=0.98; %    [-] : mecanic efficiency of shafts bearings %%
         % options.comb is a structure containing combustion data :
         options.comb.Tmax=0; %      [°C] : maximum combustion temperature
         options.comb.lambda=0; %    [-] : air excess
@@ -146,6 +145,51 @@ end
 
 if ~isfield(options,'drumFlag')    
    options.drumFlag=1;
+end
+
+if ~isfield(options,'eta_mec')    
+   options.eta_mec=0.98;
+end
+
+if ~isfield(options,'nsout')    
+   options.nsout=8;
+end
+
+if ~isfield(options,'reheat')    
+   options.reheat=1;
+end
+
+if ~isfield(options,'T_max')    
+   options.T_max=565;
+end
+
+if ~isfield(options,'T_cond_out')    
+   options.T_cond_out=28;
+end
+
+if ~isfield(options,'p3_hp')    
+   options.p3_hp=31e6;
+end
+
+if ~isfield(options,'comb')    
+   options.comb=struct;
+   options.comb.Tmax=0; %      [°C] : maximum combustion temperature
+   options.comb.lambda=0; %    [-] : air excess
+   options.comb.x=0; %         [-] : the ratio O_x/C. Example 0.05 in CH_1.2O_0.05
+   options.comb.y=0; %         [-] : the ratio H_y/C. Example 1.2 in CH_1.2O_0.05
+else
+    if ~isfield(options.comb,'Tmax')    
+   options.Tmax=0;
+    end
+     if ~isfield(options.comb,'lambda')    
+   options.lambda=0;
+     end
+     if ~isfield(options.comb,'x')    
+   options.x=0;
+     end
+    if ~isfield(options.comb,'y')    
+   options.y=0;
+    end
 end
 
 %
@@ -246,7 +290,7 @@ else
 end
 
 %Before the drum
-[t_fs,h_fs,p_fs,s_fs,t9,h9,p9,s9,Xbled] = states7_9_pre_drum(h_feed,p_feed,p8,t8,h8);
+[t_fs,h_fs,p_fs,s_fs,t9,h9,p9,s9,Xbled1] = states7_9_pre_drum(h_feed,p_feed,p8,t8,h8);
 
 if options.drumFlag==1
     p_drum=XSteam('psat_T',options.Tdrum);
@@ -264,7 +308,7 @@ end
 if options.drumFlag==1
     p_feed=p6(ind_drum+1:end);
     h_feed=h6(ind_drum+1:end);
-    [t_w,h_w,p_w,s_w,t_9,h_9,p_9,s_9,Xbled2] = states7_9_post_drum(h_feed,p_feed,h7(end),s7(end));
+    [t_w,h_w,p_w,s_w,t_9,h_9,p_9,s_9,Xbled2] = states7_9_post_drum(h_feed,p_feed,h7(end),s7(end),options.eta_SiC);
     
     t7=[t7 ; t_w ];
     p7=[p7 ; p_w ];
@@ -275,7 +319,6 @@ if options.drumFlag==1
     p9=[p9 ; p_9 ];
     h9=[h9; h_9];
     s9=[s9 ; s_9];
-    Xbled = [Xbled ; Xbled2];
 end
 e7= [e7 ; (h7-h0)-T_0*(s7-s0)];
 e9= [e7 ; (h7-h0)-T_0*(s7-s0)];
@@ -296,11 +339,33 @@ p2=p3;
 % Flowrates X 
 
 if options.drumFlag==1 
-    
+    [Xflows ,X3, X5, X6, Xd] = X_flowrates(h6,h7,h9,Xbled1,Xbled2,options.drumFlag,ind_drum);
+    X6_flows= [X6 ; Xbled1 ; Xd ; Xbled2];
 else
-    
+    [Xflows ,X3, X5, X6, ~] = X_flowrates(h6,h7,h9,Xbled1,0,led2,options.drumFlag,0);
+    X6_flows=[X6 ; Xbled1];
 end
 
+m7 = flowR7(h3,h4,h5,h6,options.drumFlag,ind_drum,X3,X5,X6_flows(2:end),options.eta_mec,P_e);
+
+m3=X3*m7;
+m5=X5*m7;
+
+Xmassflow=zeros(nsout,1);
+
+if options.drumFlag==1
+    Xmassflow(1:ind_drum-1)=X6_flows(2:ind_drum)*m7;
+    Xmassflow(ind_drum:end)=X6_flows(ind_drum+1:end)*m3;
+else
+    Xmassflow=m7*X6_flows(2:end);
+end
+
+
+% Combustion
+
+    
+% 
+    
 
 
 % Plots
@@ -333,14 +398,14 @@ if display ==1
     end
 end
 
-    function dhdp = dComp(p,h)
-        v=XSteam('v_ph',p,h);
-        dhdp=v/options.SiC;
-    end
-    function dhdp= dTurb(p,h,SiT)
-        v=XSteam('v_ph',p,h);
-        dhdp=v*SiT;
-    end
+%     function dhdp = dComp(p,h)
+%         v=XSteam('v_ph',p,h);
+%         dhdp=v/options.SiC;
+%     end
+%     function dhdp= dTurb(p,h,SiT)
+%         v=XSteam('v_ph',p,h);
+%         dhdp=v*SiT;
+%     end
 
 % Funtions
     function [ti,pi,hi,si,xi] = expansion(eta_SiT,t_in,p_in,h_in,s_in,x_in,p_out,nsout)
@@ -480,7 +545,7 @@ end
         Xbled=x(2:end);
     end
 
-function [t_w,h_w,p_w,s_w,t_9,h_9,p_9,s_9,Xbled] = states7_9_post_drum(h6,p6,h_bef,s_bef)
+function [t_w,h_w,p_w,s_w,t_9,h_9,p_9,s_9,Xbled] = states7_9_post_drum(h6,p6,h_bef,s_bef,eta_SiC)
         % Computes the datas of states 7 and 9 and the rates X after the
         % drum
         
@@ -519,7 +584,7 @@ function [t_w,h_w,p_w,s_w,t_9,h_9,p_9,s_9,Xbled] = states7_9_post_drum(h6,p6,h_b
         end
         
         % Compression at Pb
-        [t_9(1),h_9(1),s_9(1),~,~] = compression(options.eta_SiC,p_9(1),h_bef,s_bef);
+        [t_9(1),h_9(1),s_9(1),~,~] = compression(eta_SiC,p_9(1),h_bef,s_bef);
         
 
         % Computations of the X
@@ -554,7 +619,7 @@ function [t_w,h_w,p_w,s_w,t_9,h_9,p_9,s_9,Xbled] = states7_9_post_drum(h6,p6,h_b
         s_9(1)=XSteam('s_ph',p_9(1),h_9(1));
 end
 
-    function [X3, X5, X6, Xd] = X_flowrates(h6,h7,h9,Xbled1,Xbled2,drumFlag,ind_drum)
+    function [Xflows ,X3, X5, X6, Xd] = X_flowrates(h6,h7,h9,Xbled1,Xbled2,drumFlag,ind_drum)
         %Computes the X_flowrates 
         % Xbled1 : X_i before the drum
         % Xbled2: X_i after the drum
@@ -569,11 +634,11 @@ end
             
             B = [h7(ind_drum) - h9(ind_drum-1) ; -1 ; 1-sum(Xbled1) ; 0];
             
-            x=A\B;            
-            X3=x(1);
-            X5=x(2);
-            X6=x(3);
-            Xd=x(4); % X_flowrate in the drum
+            Xflows=A\B;            
+            X3=Xflows(1);
+            X5=Xflows(2);
+            X6=Xflows(3);
+            Xd=Xflows(4); % X_flowrate in the drum
         else
             A=zeros(3,3);            
             A(1,1:end)=[1 -1 0];
@@ -582,14 +647,30 @@ end
             
             B=[Xbled1(end) ; sum(Xbled1)-Xbled1(end) ; 1 - sum(Xbled1)];
             
-            x=A\B;            
-            X3=x(1);
-            X5=x(2);
-            X6=x(3);
-        end
+            Xflows=A\B;            
+            X3=Xflows(1);
+            X5=Xflows(2);
+            X6=Xflows(3);
+            Xd=nan; % No drum in this case
+        end                
+    end
+
+    function m7 = flowR7(h3,h4,h5,h6,drumFlag,ind_drum,X3,X5,X6flows,eta_mec,P_e)
+        % Computes the flow rate at point 7
         
-        x
-        
+        % Normalisation of Wm with regard to the point 7
+        %Hp Turbine and start of the IP
+         Wm=X3*(h3-h4)+ X5*(h5-h6(end-1));
+         
+         d_h=(h6(2:end)-h6(1:end-1))'; % enthalpie differences
+         if drumFlag ==1
+             Wm=Wm+sum( (X5-X6flows(2:ind_drum-1)).*d_h(2:ind_drum-1) ); % before the drum
+             Wm=Wm+sum( (X5 - X3*X6flows(ind_drum:end))...
+                 .*d_h(ind_drum:end) ); % after the drum
+         else
+             Wm=Wm+sum( (X5 - X6flows).*d_h );
+         end
+        m7=P_e/(eta_mec*Wm); % Flow rate a point 7
     end
 
     function [LHV,h_f,e_f,lambda,cp_g,comp_fum,h_fum,h_air,ma1] = combustion(comb)
