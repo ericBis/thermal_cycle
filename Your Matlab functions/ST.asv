@@ -351,14 +351,26 @@ m7 = flowR7(h3,h4,h5,h6,options.drumFlag,ind_drum,X3,X5,X6_flows(2:end),options.
 m3=X3*m7;
 m5=X5*m7;
 
-Xmassflow(nsout,1);
+Xmassflow=zeros(nsout,1);
 
 if options.drumFlag==1
     Xmassflow(1:ind_drum-1)=X6_flows(2:ind_drum)*m7;
-    Xmassflow(ind:drum)=X6_flow(ind_drum+1:end)*m3;
+    Xmassflow(ind_drum:end)=X6_flows(ind_drum+1:end)*m3;
 else
-    Xmassflow
+    Xmassflow=m7*X6_flows(2:end);
 end
+
+
+% Combustion
+
+    
+% Pertes
+
+m2=m3; % flow rate a point 2
+PmC=m2(h3-h2); % Energy of the compression
+PmCx=m3(e3-e2); % Exergy of the compression
+
+PmT=P_e/eta_mec
     
 
 

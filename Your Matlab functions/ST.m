@@ -364,8 +364,14 @@ end
 % Combustion
 
     
-% 
-    
+% Pertes
+
+m2=m3; % flow rate a point 2
+PmC=m2(h3-h2)+m7*(h8-h7); % Energy of the compression
+PmCx=m3(e3-e2)+m7*(e8-e7); % Exergy of the compression
+
+PmT=P_e/options.eta_mec;
+PmTx=m3(e3-e4);    
 
 
 % Plots
