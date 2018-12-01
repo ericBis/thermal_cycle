@@ -290,7 +290,7 @@ else
 end
 
 %Before the drum
-[t_fs,h_fs,p_fs,s_fs,t9,h9,p9,s9,Xbled1] = states7_9_pre_drum(h_feed,p_feed,p8,t8,h8);
+[t_fs,h_fs,p_fs,s_fs,t9,h9,p9,s9,Xbled1,h_sc,e_sc] = states7_9_pre_drum(h_feed,p_feed,p8,t8,h8);
 
 if options.drumFlag==1
     p_drum=XSteam('psat_T',options.Tdrum);
@@ -320,8 +320,8 @@ if options.drumFlag==1
     h9=[h9; h_9];
     s9=[s9 ; s_9];
 end
-e7= [e7 ; (h7-h0)-T_0*(s7-s0)];
-e9= [e7 ; (h7-h0)-T_0*(s7-s0)];
+e7= (h7-h0)-T_0*(s7-s0);
+e9= (h9-h0)-T_0*(s9-s0);
 x7=zeros(size(t7));
 x9=zeros(size(t9));
 
@@ -330,6 +330,7 @@ t1=t9(end);
 p1=p9(end);
 s1=s9(end);
 h1=h9(end);
+e1=e9(end);
 x1=0;
 
 % Etat 2
@@ -350,6 +351,7 @@ m7 = flowR7(h3,h4,h5,h6,options.drumFlag,ind_drum,X3,X5,X6_flows(2:end),options.
 
 m3=X3*m7;
 m5=X5*m7;
+m6=X6*m7;
 
 Xmassflow=zeros(nsout,1);
 
@@ -365,14 +367,70 @@ end
 
     
 % Pertes
+DATEN=zeros(3,1);
+DATEX=zeros(7,1);
+ETA=zeros(9,1);
+MASSFLOW=zeros(4,1);
+
+
+% DATEN(1)=mc*LHV-( m3*(h3-h2)+m5*(h5-h4) );  % perte_gen [kW]
+DATEN(2)=P_e/(1/options.eta_mec - 1); % perte_mec [kW]
+DATEN(3)=m6*(h6(1)-h7(1)); % perte_cond [kW]
 
 m2=m3; % flow rate a point 2
-PmC=m2(h3-h2); % Energy of the compression
-PmCx=m3(e3-e2); % Exergy of the compression
+PmC=m2*(h3-h2)+m7*(h8-h7(1)); % Energy of the compressions
+PmCx=m3*(e3-e2)+m7*(e8-e7(1)); % Exergy of the compressions
 
-PmT=P_e/eta_mec
+PmT=P_e/options.eta_mec;
+PmTx=m3*(e3-e4)+m5*(e5-e6(end-1));
+for j=nsout-1:1
+    PmTx= PmTx + (m5-sum(Xmassflow(j:end-1)))*(e6(j)-e6(j-1));
+end
+
+if options.drumFlag==1
+    md=Xmassflow(ind_drum);
+    PmC= PmC + md*(h9(ind_drum)-h7(ind_drum));
+    PmCx= PmCx + md*(e9(ind_drum)-e7(ind_drum));
     
+    PmTx= (PmTx - (m5-sum(Xmassflow(ind_drum:end-1)))...
+        *(e6(ind_drum)-e6(ind_drum-1)))/2; % CHECK AVEC GAUTHIER
+    DATEN(3)=DATEN(3)+sum(Xmassflow(1:ind_drum-1)*(h_sc-h7(1))); % perte_cond [kW]
+else
+    DATEN(3)=DATEN(3)+sum(Xmassflow.*(h_sc-h7(1))); % perte_cond [kW]
+end
 
+Q_I=m3*(h3-h2)+ m5*(h5-h4);
+
+
+DATEX(1)=P_e/(1/options.eta_mec - 1); % perte_mec [kW]
+%DATEX(2)=mc*ec-P_e; % perte_totex [kW]
+DATEX(3)=(PmTx-PmCx)-(PmT-PmC); % perte_rotex [kW]
+%DATEX(4)=mc*ec - mf*(ef-er); % perte_combex [kW]
+DATEX(5)= m6*(e6(1)-e7(1)); % perte_condex [kW]
+%DATEX(6)=mf*(e_exch - er); % perte_chemex [kW]
+%DATEX(7)=mf*(ef-e_exch) - m3*(e3-e2);  % perte_transex [kW]
+
+if options.drumFlag==1
+    DATEX(5)=DATEX(5)+sum(Xmassflow(1:ind_drum-1)*e_sc-e7(1)); % perte_condex [kW]
+else
+    DATEX(5)=DATEX(5)+sum(Xmassflow.*(e_sc-e7(1))); % perte_condex [kW]
+end
+
+MASSFLOW(2)=m2; % water massflow at 2 [kg/s]
+%MASSFLOW(3)=mc; % combustible massflow [kg/s]
+%MASSFLOW(4)=mf; % exhaust gas massflow [kg/s]
+
+
+DAT=[ t1 t2 t3 t4 t5 t6 t7' t8 t9' ;...
+      p1 p2 p3 p4 p5 p6 p7' p8 p9' ;...
+      h1 h2 h3 h4 h5 h6 h7' h8 h9' ;...
+      s1 s2 s3 s4 s5 s6 s7' s8 s9' ;...
+      e1 e2 e3 e4 e5 e6 e7' e8 e9' ;...
+      x1 x2 x3 x4 x5 x6 x7' x8 x9'];
+  ETA(1)= (PmT-PmC)/Q_I; % eta_cyclen
+  ETA(2)= P_e/(mc*LHV); % eta_toten
+  ETA(3)=  
+  
 
 % Plots
 if display ==1
@@ -404,16 +462,6 @@ if display ==1
     end
 end
 
-%     function dhdp = dComp(p,h)
-%         v=XSteam('v_ph',p,h);
-%         dhdp=v/options.SiC;
-%     end
-%     function dhdp= dTurb(p,h,SiT)
-%         v=XSteam('v_ph',p,h);
-%         dhdp=v*SiT;
-%     end
-
-% Funtions
     function [ti,pi,hi,si,xi] = expansion(eta_SiT,t_in,p_in,h_in,s_in,x_in,p_out,nsout)
         % ti,pi,hi,si,xi: state of the feed-heatings
         % t_in,p_in,h_in,s_in : conditions at the turbine inlet
@@ -479,7 +527,7 @@ end
         end
     end
 
-    function [t_w,h_w,p_w,s_w,t_9,h_9,p_9,s_9,Xbled] = states7_9_pre_drum(h6,p6,p8,t8,h8)
+    function [t_w,h_w,p_w,s_w,t_9,h_9,p_9,s_9,Xbled,hsc,esc] = states7_9_pre_drum(h6,p6,p8,t8,h8)
         %Computes the datas of states 7 and 9 and the rates X
         
         ns=length(h6); % Number of feed-heating used to warm up the water
@@ -511,6 +559,8 @@ end
         tsc=t8+TpinchSub;
         psc=p_w(1);
         hsc=XSteam('h_pt',psc,tsc);
+        ssc=XSteam('s_pt',psc,tsc);
+        esc=(hsc - h0) - T_0*(ssc-s0);
         
         % Computations of the X
         % They can be compbuted by resolving a linear system of type Ax=B
