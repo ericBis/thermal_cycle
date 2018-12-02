@@ -134,7 +134,7 @@ end
     entrop = entropy(TemperatureEtats,pressions);%kJ/kgK
     exergie = exergy(enth,entrop);%kJ/kg
     %%%
-    matriceEtats=ones(4,4);
+    matriceEtats=ones(5,4);
     matriceEtats(1,:)=TemperatureEtats-273;
     matriceEtats(2,:)=pressions;
     matriceEtats(3,:)=enth;
@@ -178,7 +178,7 @@ end
     eta_totEx = rdtTotalExergetique(Pe,Pcomb);
     eta_rotEx = rdtRotorExergetique(Pm,exergieVector,MFair,MFfumee);
     eta_combEx = rdtCombExergetique(exergieVector,MFfumee,Pcomb);
-    eta_meca = rdtMecanique(Pe,Pm);
+    eta_meca = rdtMecanique(Pe,Pm)
     
     %%%%%OUTPUT VARIABLES%%%%%
     ETA=[eta_cyclEn,eta_totEn,eta_cyclEx,eta_totEx,eta_rotEx,eta_combEx];
@@ -189,7 +189,7 @@ end
     COMBUSTION = struct();
     COMBUSTION.LHV=PouvoirCalorifiqueInf(Y,X);
     COMBUSTION.er=er;
-    COMBUSTION.ec=exergieCombustible(Y,X);
+    COMBUSTION.e_c=exergieCombustible(Y,X);
     COMBUSTION.lambda=lambda;
     cpFumeeAt400K=cpMoyenFumee(400,TemperatureEtats(4),Y,X,lambda)/(TemperatureEtats(4)-400); %kJ/kgK
     COMBUSTION.Cp_g=cpFumeeAt400K;
