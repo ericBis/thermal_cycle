@@ -1,4 +1,4 @@
-function [ETA XMASSFLOW DATEN DATEX DAT MASSFLOW COMBUSTION FIG] = ST(P_e,options,display)
+function [ETA, XMASSFLOW, DATEN, DATEX, DAT, MASSFLOW, COMBUSTION, FIG] = ST(P_e,options,display)
 % ST Steam power plants modelisation
 % ST(P_e,options,display) compute the thermodynamics states for a Steam
 % power plant (combustion, exchanger, cycle) turbine based on several
@@ -102,7 +102,7 @@ function [ETA XMASSFLOW DATEN DATEX DAT MASSFLOW COMBUSTION FIG] = ST(P_e,option
 
 % Exemple of how to use 'nargin' to check your number of inputs
 if nargin<3
-    display = 0;
+    display = 1;
     if nargin<2
         options = struct();
         if nargin<1
@@ -353,13 +353,13 @@ m3=X3*m7;
 m5=X5*m7;
 m6=X6*m7;
 
-Xmassflow=zeros(nsout,1);
+XMASSFLOW=zeros(nsout,1);
 
 if options.drumFlag==1
-    Xmassflow(1:ind_drum-1)=X6_flows(2:ind_drum)*m7;
-    Xmassflow(ind_drum:end)=X6_flows(ind_drum+1:end)*m3;
+    XMASSFLOW(1:ind_drum-1)=X6_flows(2:ind_drum)*m7;
+    XMASSFLOW(ind_drum:end)=X6_flows(ind_drum+1:end)*m3;
 else
-    Xmassflow=m7*X6_flows(2:end);
+    XMASSFLOW=m7*X6_flows(2:end);
 end
 
 
@@ -384,19 +384,19 @@ PmCx=m3*(e3-e2)+m7*(e8-e7(1)); % Exergy of the compressions
 PmT=P_e/options.eta_mec;
 PmTx=m3*(e3-e4)+m5*(e5-e6(end-1));
 for j=nsout-1:1
-    PmTx= PmTx + (m5-sum(Xmassflow(j:end-1)))*(e6(j)-e6(j-1));
+    PmTx= PmTx + (m5-sum(XMASSFLOW(j:end-1)))*(e6(j)-e6(j-1));
 end
 
 if options.drumFlag==1
-    md=Xmassflow(ind_drum);
+    md=XMASSFLOW(ind_drum);
     PmC= PmC + md*(h9(ind_drum)-h7(ind_drum));
     PmCx= PmCx + md*(e9(ind_drum)-e7(ind_drum));
     
-    PmTx= (PmTx - (m5-sum(Xmassflow(ind_drum:end-1)))...
+    PmTx= (PmTx - (m5-sum(XMASSFLOW(ind_drum:end-1)))...
         *(e6(ind_drum)-e6(ind_drum-1)))/2; % CHECK AVEC GAUTHIER
-    DATEN(3)=DATEN(3)+sum(Xmassflow(1:ind_drum-1)*(h_sc-h7(1))); % perte_cond [kW]
+    DATEN(3)=DATEN(3)+sum(XMASSFLOW(1:ind_drum-1)*(h_sc-h7(1))); % perte_cond [kW]
 else
-    DATEN(3)=DATEN(3)+sum(Xmassflow.*(h_sc-h7(1))); % perte_cond [kW]
+    DATEN(3)=DATEN(3)+sum(XMASSFLOW.*(h_sc-h7(1))); % perte_cond [kW]
 end
 
 Q_I=m3*(h3-h2)+ m5*(h5-h4); % Combustion heat energy
@@ -411,9 +411,9 @@ DATEX(5)= m6*(e6(1)-e7(1)); % perte_condex [kW]
 %DATEX(7)=mf*(ef-e_exch) - m3*(e3-e2);  % perte_transex [kW]
 
 if options.drumFlag==1
-    DATEX(5)=DATEX(5)+sum(Xmassflow(1:ind_drum-1)*e_sc-e7(1)); % perte_condex [kW]
+    DATEX(5)=DATEX(5)+sum(XMASSFLOW(1:ind_drum-1)*e_sc-e7(1)); % perte_condex [kW]
 else
-    DATEX(5)=DATEX(5)+sum(Xmassflow.*(e_sc-e7(1))); % perte_condex [kW]
+    DATEX(5)=DATEX(5)+sum(XMASSFLOW.*(e_sc-e7(1))); % perte_condex [kW]
 end
 
 MASSFLOW(2)=m2; % water massflow at 2 [kg/s]
@@ -438,23 +438,33 @@ ETA(3)= (PmT-PmC)/Q_Ix; % eta_cyclex
 %ETA(8)= (ef - e_exch)/(ef-er); % eta_chemex
 %ETA(9)= Q_I/(mf*(ef-e_exch));
 
-
-
 % Plots
 if display ==1
     %Cloche T-S
     Tk=374.15; %[°C] Point triple de l'eau
-    T=linspace(0,Tk);
-    sL_T=zeros(size(T));
-    sV_T = zeros(size(T));
-    hL_T=zeros(size(T));
-    hV_T = zeros(size(T));
-    for i=1:length(T)
-        sL_T(i)=XSteam('sL_T',T(i));
-        sV_T(i)=XSteam('sV_T',T(i));
-        hL_T(i) = XSteam('hL_T',T(i));
-        hV_T(i) = XSteam('hV_T',T(i));
+    S_plot=linspace(0,10,1000);
+    T_HS=zeros(size(S_plot));
+    H_HS=zeros(size(S_plot));
+    for c=1:length(T_HS)
+       T_HS(c)=XSteam('Tsat_s',S_plot(c));
     end
+    [~,ind_tmax]=max(T_HS);
+    for c=1:ind_tmax
+                H_HS(c)=XSteam('hL_T',T_HS(c));
+    end
+    for c=ind_tmax:length(T_HS)
+                H_HS(c)=XSteam('hV_T',T_HS(c));
+    end     
+    
+%
+    
+    
+    
+    figure
+    plot(S_plot,T_HS);
+    
+    figure
+    plot(S_plot,H_HS)
     
     % 1-2
     t1_2=linespace(p1,p8,50);
@@ -747,6 +757,10 @@ end
 
     function LHV =getLHV(y,x)
         LHV=393400+102250*y-(x/(1+0.5*y))*(111000+102250*y)/(12+y+x*16);
+    end
+
+    function plotHS_satell()
+        
     end
 
 end
