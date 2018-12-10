@@ -16,10 +16,11 @@ function [ETA, DATEN, DATEX, DAT, MASSFLOW, COMBUSTION] = GT(P_e,options,display
 %   -options.k_cc  [-] : Coefficient of pressure losses due to combustion
 %                        chamber
 %   -options.T_3   [°C] : Temperature after combustion (before turbine)
-%   -option.eta_PiC[-] : Intern polytropic efficiency (Rendement
+%   -options.eta_PiC[-] : Intern polytropic efficiency (Rendement
 %                        polytropique interne) for compression
-%   -option.eta_PiT[-] : Intern polytropic efficiency (Rendement
+%   -options.eta_PiT[-] : Intern polytropic efficiency (Rendement
 %                        polytropique interne) for expansion
+%   -options.NTU
 %DISPLAY = 1 or 0. If 1, then the code should plot graphics. If 0, then the
 %          do not plot.
 %
@@ -95,7 +96,8 @@ if nargin<3
 %       options.k_cc=0.95;  
 %       options.T_3=1400;   
 %       options.eta_PiC=0.9; 
-%       options.eta_PiT=0.9; 
+%       options.eta_PiT=0.9;
+%       options.NTU=4;
    end
 end
 
@@ -178,7 +180,7 @@ end
     eta_totEx = rdtTotalExergetique(Pe,Pcomb);
     eta_rotEx = rdtRotorExergetique(Pm,exergieVector,MFair,MFfumee);
     eta_combEx = rdtCombExergetique(exergieVector,MFfumee,Pcomb);
-    eta_meca = rdtMecanique(Pe,Pm)
+    eta_meca = rdtMecanique(Pe,Pm);
     
     %%%%%OUTPUT VARIABLES%%%%%
     ETA=[eta_cyclEn,eta_totEn,eta_cyclEx,eta_totEx,eta_rotEx,eta_combEx];
@@ -195,10 +197,19 @@ end
     COMBUSTION.Cp_g=cpFumeeAt400K;
     COMBUSTION.fum=MFComposition;
     
+    %%%% CALCUL ECHANGEUR DE CHALEUR %%%%
+    %Calcul de T2R en fonction du NTU
+    T2R=(TemperatureEtats(4)*options.NTU+TemperatureEtats(2))/(1+options.NTU);
+    t2R=T2R-273.15;
+    %Calcul de T5 en fonction d'un bilan d'energie
+    fun000=@calculTemperatureT5;
+    x000=85;%[K]
+    T5 = fsolve(@(x)fun000(x),x000);
+    deltaPinchT4_T2R=TemperatureEtats(4)-T2R; %[K] deltaPinchT4_T2R < deltaT5_T2
+    deltaT5_T2=T5-TemperatureEtats(2);%[K] 
+    eta_EchangeurCyclenGT = eta_ExchangeCyclenGT();
+    
     %%%% PLOTS %%%%%
-    
-    %Plot T-s et h_s (A FAIRE)
-    
     %Pie chart
     data = [Pfm,Protex,Pcomb,PexhExerg];
     labels = {strcat('Mechanical losses:',num2str(data(1)),'MW'),strcat('Mechanical exergetic power:',num2str(data(2)),'MW'),strcat('Primary exergy input:',num2str(data(3)),'MW'),strcat('Exhaust exergy losses:',num2str(data(4)),'MW')};
@@ -470,4 +481,27 @@ end
     function eta_meca = rdtMecanique(Pe,Pm)
     eta_meca=Pe/Pm;
     end
+
+    %%%%PARTIE Echangeur de chaleur%%%%
+    
+    function calculT5 = calculTemperatureT5(x)
+    calculT5=MFair*cpMoyenAir(TemperatureEtats(2),T2R)*(T2R-TemperatureEtats(2))-MFfumee*cpMoyenFumee(TemperatureEtats(4),x,Y,X,lambda)*(TemperatureEtats(4)-x);
+    end
+
+    function eta_EchangeurCyclenGT = eta_ExchangeCyclenGT()
+    coef1=(1+1/(lambda*pouvoirComburivor));
+    coef2=cpMoyenFumee(TemperatureEtats(4),TemperatureEtats(3),Y,X,lambda)/cpMoyenAir(TemperatureEtats(1),TemperatureEtats(2));
+    coef3=(TemperatureEtats(3)/TemperatureEtats(1))*(1-(TemperatureEtats(4)/TemperatureEtats(3)));
+    coef4=(TemperatureEtats(2)/TemperatureEtats(1))-1;
+    coef5=cpMoyenFumee(TemperatureEtats(2),TemperatureEtats(3),Y,X,lambda)/cpMoyenAir(TemperatureEtats(1),TemperatureEtats(2));
+    coef6=TemperatureEtats(3)/TemperatureEtats(1);
+    coef7=TemperatureEtats(2)/TemperatureEtats(1);
+    coef8=cpMoyenAir(TemperatureEtats(2),T2R)/cpMoyenAir(TemperatureEtats(1),TemperatureEtats(2));
+    coef9=options.NTU/(1+options.NTU);
+    coef10=(TemperatureEtats(4)-TemperatureEtats(2))/TemperatureEtats(1);
+    numerateur=coef1*coef2*coef3-coef4;
+    denominateur=coef1*coef5*coef6-coef7-coef8*coef9*coef10;
+    eta_EchangeurCyclenGT=numerateur/denominateur;
+    end
+
 end

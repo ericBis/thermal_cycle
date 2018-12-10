@@ -66,12 +66,11 @@ if nargin<3
        end
 %        %%%%%DESCRIPTION DE LA STRUCTURE%%%%%
 %   P_eg = 225e3; %[kW]
-%    P_EST= 140e3;%[kW]
 %   options=struct;
 %   options.T0 =15; %[°C]:Reference temperature
-%   options.T_ext=25; %[°C]:External temperature
+%   options.T_ext=15; %[°C]:External temperature
 %   options.T_STmax=565; %[°C]:maximum temperature on ST cycle
-%   options.eta_mec=0.956; %[-]:mecanic efficiency of shafts bearings
+%   options.eta_mec=0.96; %[-]:mecanic efficiency of shafts bearings
 %   options.pdrum=4; %[bar]:Drum pressure
 %   options.pmid=28; %[bar]:Intermediary pressure level
 %   options.x7=0.95;
@@ -102,14 +101,13 @@ end
   ETAGT=ETA;
   MASSFLOWGT=MASSFLOW;
 
-
 %%%%OUTPUT VARIABLE CCGT%%%%
   ETA=ones(1,11);
   MASSFLOW=ones(1,5);
   MASSFLOW(4)=MASSFLOWGT(1);%MFAir
   MASSFLOW(5)=MASSFLOWGT(2);%MFComb
   MFumee=MASSFLOWGT(3);%MFumee
-  P_EST= 140e3;
+  
 %%%%FUMEE EN 4G%%%%
   T_4g=DAT(1,4);%[°C]
   h_4g=DAT(3,4);
@@ -131,17 +129,15 @@ end
   
   %%%Etats du cycle
   T3=options.T_STmax;%[°C] difference fumee en sortie de GT et eau
-  P3=110;%[bar] valeur imposee
-  H3=XSteam('h_pT',P3,T3);%[kJ/kg]
-  S3=XSteam('s_pT',P3,T3);%[kJ/kgK]
-  E3=(H3-H0)-T0*(S3-S0);%[kJ/kg]
   
+  %L'etat 5 est entierement connu sur base des inputs
   T5=T3;%[°C] IMPOSEE
-  P5=28;%[bar] IMPOSEE
+  P5=options.pmid;%[bar]
   H5=XSteam('h_pT',P5,T5);
   S5=XSteam('s_pT',P5,T5);
   E5=(H5-H0)-T0*(S5-S0);
   
+  %L'etat 9 est determine à partir de l'etat 5
   P9_prime=P5;
   P9_seconde=P5;
   T9_prime=XSteam('Tsat_p',P9_prime);
@@ -154,19 +150,8 @@ end
   S9_seconde=XSteam('sV_p',P9_seconde);
   E9_prime=(H9_prime-H0)-T0*(S9_prime-S0) ;
   E9_seconde=(H9_seconde-H0)-T0*(S9_seconde-S0) ;
-  P10_prime=P3;%[bar]
-  P10_seconde=P3;%[bar]
-  T10_prime=XSteam('Tsat_p',P10_prime);
-  T10_seconde=T10_prime;
-  X10_prime=0;
-  X10_seconde=1;
-  H10_prime=XSteam('hL_p',P10_prime);
-  H10_seconde=XSteam('hV_p',P10_seconde);
-  S10_prime=XSteam('sL_p',P10_prime);
-  S10_seconde=XSteam('sV_p',P10_seconde);
-  E10_prime=(H10_prime-H0)-T0*(S10_prime-S0) ;
-  E10_seconde=(H10_seconde-H0)-T0*(S10_seconde-S0) ;
   
+  %L'etat 8 est determinee a partir de l'etat 6
   P6=options.pdrum;%[bar] IMPOSEE
   P8=P6;
   T8=T9_prime;
@@ -186,14 +171,34 @@ end
   E8_prime=(H8_prime-H0)-T0*(S8_prime-S0) ;
   E8_seconde=(H8_seconde-H0)-T0*(S8_seconde-S0) ;
   
+  %L'etat 6 ne depend que de l'etat 5
   S6s=S5;
   P6s=P6;
   H6s=XSteam('h_ps',P6s,S6s);
   H6=H5-options.eta_SiT*(H5-H6s);
   S6=XSteam('s_ph',P6,H6);
-  T9=T10_prime;
-  T6=T9;
+  T6=XSteam('T_hs',H6,S6);
   E6=(H6-H0)-T0*(S6-S0);
+  
+  %Definir ici l'etat 10 et 3
+  T10_prime=T6;
+  T10_seconde=T10_prime;
+  X10_prime=0;
+  X10_seconde=1;
+  P10_prime=XSteam('psat_T',T10_prime);%[bar]
+  P10_seconde=P10_prime;%[bar]
+  H10_prime=XSteam('hL_p',P10_prime);
+  H10_seconde=XSteam('hV_p',P10_seconde);
+  S10_prime=XSteam('sL_p',P10_prime);
+  S10_seconde=XSteam('sV_p',P10_seconde);
+  E10_prime=(H10_prime-H0)-T0*(S10_prime-S0) ;
+  E10_seconde=(H10_seconde-H0)-T0*(S10_seconde-S0) ;
+  
+  %L'etat 3 est defini a partir de 10
+  P3=P10_seconde;
+  H3=XSteam('h_pT',P3,T3);%[kJ/kg]
+  S3=XSteam('s_pT',P3,T3);%[kJ/kgK]
+  E3=(H3-H0)-T0*(S3-S0);%[kJ/kg]
   
   P4=P5;
   P4s=P4;
@@ -204,6 +209,8 @@ end
   T4=XSteam('T_ps',P4,S4);
   E4=(H4-H0)-T0*(S4-S0);
   
+  %L'etat 9 est determiner a partur de 5 et 6
+  T9=T6;
   P9=P5;
   H9=XSteam('h_pT',P9,T9);
   S9=XSteam('s_pT',P9,T9);
@@ -268,67 +275,66 @@ end
   E_5g=(h_5g-H_0g)-T0*(S_5g-S_0g);
   
   %%%%PERTE PUISSANCE EXERGETIQUE en kW%%%%
-  IrrevExergCombustion=(MASSFLOW(5)*COMBUSTION.e_c+MASSFLOW(4)* DAT(5,2))-(MFumee)*DAT(5,3)
+  IrrevExergCombustion=(MASSFLOW(5)*COMBUSTION.e_c+MASSFLOW(4)*DAT(5,2))-(MFumee)*DAT(5,3);
   PuissanceEffectiveGT=P_eg;
-  PuissanceEffectiveST=P_EST;
-  PuissanceExergPrimaire=(MASSFLOW(5)*COMBUSTION.e_c)
+  PuissanceExergPrimaire=(MASSFLOW(5)*COMBUSTION.e_c);
   
-  Q_point=MFumee*(h_4g-h_5g)
-  TIm=(T_5g-T_4g)/log((T_5g+273.15)/(T_4g+273.15))%[K]
-  TIIm=(T3-T2)/log((T3+273.15)/(T2+273.15))%[K]
-  IrrevExergTransfThermique=Q_point*T0*(TIm-TIIm)/(TIm*TIIm)
+  Q_point=MFumee*(h_4g-h_5g);
+  TIm=(T_5g-T_4g)/log((T_5g+273.15)/(T_4g+273.15));%[K]
+  TIIm=(T3-T2)/log((T3+273.15)/(T2+273.15));%[K]
+  IrrevExergTransfThermique=Q_point*T0*(TIm-TIIm)/(TIm*TIIm);
   
-  PerteExergCheminee=MFumee*E_5g
-  PerteExergCondenseur=sum(MASSFLOW(1:3))*(E7-E1)
+  PerteExergCheminee=MFumee*E_5g;
+  PerteExergCondenseur=sum(MASSFLOW(1:3))*(E7-E1);
   
-  irrevCompresseurGT=T0*MASSFLOW(4)*(DAT(4,2)-DAT(4,1))%AirGT
-  irrevTurbineGT=T0*MFumee*(DAT(4,4)-DAT(4,3))%FumeeGT
-  irrevTurbineST_HP=T0*MASSFLOW(1)*(S4-S3)%mvHP dans la turbine HP
-  irrevTurbineST_IP=T0*sum(MASSFLOW(1:2))*(S6-S5)%mvHP+mvIP dans la turbine IP
-  irrevTurbineST_LP=T0*sum(MASSFLOW(1:3))*(S7-S6)%mvHP+mvIP dans la turbine LP
-  IrrevComplexeRotoriqueCCGT=irrevCompresseurGT+irrevTurbineGT+irrevTurbineST_HP+irrevTurbineST_IP+irrevTurbineST_LP
-  PmST_pompes=sum(MASSFLOW(1:3))*(H2-H1)+MASSFLOW(1)*(H10_prime-H9_prime)+sum(MASSFLOW(1:2))*(H9_prime-H8_prime)
-  PmST_turbines=MASSFLOW(1)*(H3-H4)+sum(MASSFLOW(1:2))*(H5-H6)+sum(MASSFLOW(1:3))*(H6-H7)
-  PmST=PmST_turbines-PmST_pompes;
-  PerteMecaST=P_EST-PmST;
-  PerteMecaGT=DATEN(1)
-  PerteMecaCCGT=PerteMecaST+PerteMecaGT
+  irrevCompresseurGT=T0*MASSFLOW(4)*(DAT(4,2)-DAT(4,1));%AirGT
+  irrevTurbineGT=T0*MFumee*(DAT(4,4)-DAT(4,3));%FumeeGT
+  irrevTurbineST_HP=T0*MASSFLOW(1)*(S4-S3);%mvHP dans la turbine HP
+  irrevTurbineST_IP=T0*sum(MASSFLOW(1:2))*(S6-S5);%mvHP+mvIP dans la turbine IP
+  irrevTurbineST_LP=T0*sum(MASSFLOW(1:3))*(S7-S6);%mvHP+mvIP+mvLP dans la turbine LP
+  IrrevComplexeRotoriqueCCGT=irrevCompresseurGT+irrevTurbineGT+irrevTurbineST_HP+irrevTurbineST_IP+irrevTurbineST_LP;
+  
+  PmST_turbines=MASSFLOW(1)*(H3-H4)+sum(MASSFLOW(1:2))*(H5-H6)+sum(MASSFLOW(1:3))*(H6-H7);
+  PmST=PmST_turbines;
+  PuissanceEffectiveST=PmST*options.eta_mec;
+  PerteMecaST=PmST-PuissanceEffectiveST;
+  PerteMecaGT=DATEN(1);
+  PerteMecaCCGT=PerteMecaST+PerteMecaGT;
 
   %%%%PERTE PUISSANCE ENERGETIQUE en kW%%%%
-  PerteEnergCheminee=MFumee*(h_5g-DAT(3,1))
-  PerteEnergCondenseur=sum(MASSFLOW(1:3))*(H7-H1)
-  PuissanceEnergPrimaire=(MASSFLOW(5)*COMBUSTION.LHV)
+  PerteEnergCheminee=MFumee*(h_5g-DAT(3,1));
+  PerteEnergCondenseur=sum(MASSFLOW(1:3))*(H7-H1);
+  PuissanceEnergPrimaire=(MASSFLOW(5)*COMBUSTION.LHV);
 
   %%%%PIE CHART EXERG%%%%
+  figure(1)
   dataExerg = [IrrevExergCombustion,IrrevExergTransfThermique,PerteExergCheminee,IrrevComplexeRotoriqueCCGT,PerteExergCondenseur,PerteMecaCCGT,PuissanceEffectiveST,PuissanceEffectiveGT]*(10^(-3));
   labelsExerg = {strcat('Irrev. comb.:',num2str(dataExerg(1)),'MW'),strcat('Irrev. transf.:',num2str(dataExerg(2)),'MW'),strcat('Perte cheminee:',num2str(dataExerg(3)),'MW'),strcat('Irrev. rotor CCGT:',num2str(dataExerg(4)),'MW'),strcat('Perte condenseur:',num2str(dataExerg(5)),'MW'),strcat('Perte meca CCGT:',num2str(dataExerg(6)),'MW'),strcat('Puiss. TV:',num2str(dataExerg(7)),'MW'),strcat('Puiss. TG:',num2str(dataExerg(8)),'MW')};
   pie(dataExerg,labelsExerg);
   title(strcat('Puiss. exergétique primaire:',num2str(PuissanceExergPrimaire*(10^(-3))),'MW'));
 
-%     %%%%PIE CHART ENERG%%%%
-%   dataEnerg = [PerteEnergCheminee,PerteEnergCondenseur,PerteMecaCCGT,PuissanceEffectiveST,PuissanceEffectiveGT]*(10^(-3));
-%   labelsEnerg = {strcat('Perte cheminee:',num2str(dataEnerg(1)),'MW'),strcat('Perte condenseur:',num2str(dataEnerg(2)),'MW'),strcat('Perte meca CCGT:',num2str(dataEnerg(3)),'MW'),strcat('Puiss. TV:',num2str(dataEnerg(4)),'MW'),strcat('Puiss. TG:',num2str(dataEnerg(5)),'MW')};
-%   pie(dataEnerg,labelsEnerg);
-%   title(strcat('Puiss. energétique primaire:',num2str(PuissanceEnergPrimaire*(10^(-3))),'MW'));
+    %%%%PIE CHART ENERG%%%%
+  figure(2)
+  dataEnerg = [PerteEnergCheminee,PerteEnergCondenseur,PerteMecaCCGT,PuissanceEffectiveST,PuissanceEffectiveGT]*(10^(-3));
+  labelsEnerg = {strcat('Perte cheminee:',num2str(dataEnerg(1)),'MW'),strcat('Perte condenseur:',num2str(dataEnerg(2)),'MW'),strcat('Perte meca CCGT:',num2str(dataEnerg(3)),'MW'),strcat('Puiss. TV:',num2str(dataEnerg(4)),'MW'),strcat('Puiss. TG:',num2str(dataEnerg(5)),'MW')};
+  pie(dataEnerg,labelsEnerg);
+  title(strcat('Puiss. energétique primaire:',num2str(PuissanceEnergPrimaire*(10^(-3))),'MW'));
   
   %%%%RENDEMENT DE LA ST, GT ET CCGT%%%%
   ETA(1)=PmST/Q_point;%eta_STcyclen, cycle energy efficiency
   ETA(2)=ETAGT(1);%eta_GTcyclen
-  ETA(3)=(P_eg+P_EST)/(MASSFLOW(5)*COMBUSTION.LHV);%eta_toten
-  ETA(4)=PmST/(MFumee*(E_4g-E_5g))%eta_STcyclex, cycle exegy efficiency
+  ETA(3)=(PuissanceEffectiveGT+PuissanceEffectiveST)/(MASSFLOW(5)*COMBUSTION.LHV);%eta_toten
+  ETA(4)=PmST/(MFumee*(E_4g-E_5g));%eta_STcyclex, cycle exegy efficiency
   ETA(5)=ETAGT(3);%eta_GTcyclex, cycle exegy efficiency
-  ETA(6)=(P_eg+P_EST)/(MASSFLOW(5)*COMBUSTION.e_c);%eta_totex, overall exergie efficiency
+  ETA(6)=(PuissanceEffectiveGT+PuissanceEffectiveST)/(MASSFLOW(5)*COMBUSTION.e_c);%eta_totex, overall exergie efficiency
   ETA(7)=(MFumee*(h_4g-h_5g))/(MASSFLOW(5)*COMBUSTION.LHV) ;%eta_gen, Steam generator energy efficiency
-%   NumerateurEtaGex=((MASSFLOW(1)*E3+sum(MASSFLOW(1:2))*E5+MASSFLOW(3)*E6)-sum(MASSFLOW(1:3))*E2);
-  NumerateurEtaGex=(MASSFLOW(1)*E3-sum(MASSFLOW(1:3))*E2);
-  DenominateurEtaGex=(MASSFLOW(5)*COMBUSTION.e_c);
-  ETA(8)= NumerateurEtaGex/DenominateurEtaGex;%eta_gex, Steam generator exergy efficiency
   ETA(9)=ETAGT(6);%eta_combex, Combustion exergy efficiency
-  NumerateurEtaTransexSG=NumerateurEtaGex;
-  DenominateurEtaTransexSG=MFumee*(E_4g-E_5g);
   ETA(10)=(E_4g-E_5g)/(E_4g) ;%eta_chemex, Chimney exergy efficiency (losses)
+  NumerateurEtaTransexSG=(MASSFLOW(1)*E3-sum(MASSFLOW(1:3))*E2);
+  DenominateurEtaTransexSG=MFumee*(E_4g-E_5g);
   ETA(11)=NumerateurEtaTransexSG/DenominateurEtaTransexSG;%eta_transex, Heat exchanger overall exergy efficiency
-
+  ETA(8)=ETA(10)*ETA(11)* ETA(9); %eta_gex, Steam generator exergy efficiency
+ 
   function systemMassFlow = CalculationFlow(MassflowIterInitiale,MFumee,h_4g,h_HPg,h_IPg,h_LPg,Enthalpies)
   systemMassFlow=ones(3,1);
   systemMassFlow(1,1)= -MFumee*(h_4g-h_HPg)+MassflowIterInitiale(1)*(Enthalpies(3)-Enthalpies(14)+Enthalpies(5)-Enthalpies(4))+MassflowIterInitiale(2)*(Enthalpies(5)-Enthalpies(11));
