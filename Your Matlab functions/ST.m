@@ -106,31 +106,31 @@ if nargin<3
     if nargin<2
         options = struct();
         if nargin<1
-            P_e = 250e3; % [kW] Puissance énergétique de l'installation
+            P_e = 288e3; % [kW] Puissance énergétique de l'installation
         end
         options.nsout=8; %   [-] : Number of feed-heating %%
         options.reheat=1; %    [-] : Number of reheating %%
         options.T_max=565; %     [°C] : Maximum steam temperature %%
-        options.T_cond_out=28; %[°C] : Condenseur cold outlet temperature %%
-        options.p3_hp=31e6; %     [bar] : Maximum pressure  %%
+        options.T_cond_out=26; %[°C] : Condenseur cold outlet temperature %%
+        options.p3_hp=310; %     [bar] : Maximum pressure  %%
         options.drumFlag=1; %   [-] : if =1 then drum if =0 => no drum.  %%
-        options.eta_mec=0.98; %    [-] : mecanic efficiency of shafts bearings %%
+        options.eta_mec=0.99; %    [-] : mecanic efficiency of shafts bearings %%
         % options.comb is a structure containing combustion data :
         options.comb=struct;
         options.comb.Tmax=1050; %      [°C] : maximum combustion temperature
         %options.comb.lambda=0; %    [-] : air excess
         options.comb.x=0; %         [-] : the ratio O_x/C. Example 0.05 in CH_1.2O_0.05
-        options.comb.y=0; %         [-] : the ratio H_y/C. Example 1.2 in CH_1.2O_0.05
+        options.comb.y=4; %         [-] : the ratio H_y/C. Example 1.2 in CH_1.2O_0.05
         options.T_exhaust=0; %  [°C] : Temperature of exhaust gas out of the chimney %%
-        options.p_3=6.1e6; %        [-] : High pressure after last reheating  %%
+        options.p_3=61; %        [-] : High pressure after last reheating  %%
         options.x4=0.99; %         [-] : Vapor ratio [gaseous/liquid] (in french : titre) %%
         options.T_0=15; %        [°C] : Reference temperature %%
-        options.TpinchSub=0; %  [°C] : Temperature pinch at the subcooler %%
-        options.TpinchEx=5; %   [°C] : Temperature pinch at a heat exchanger %%
-        options.TpinchCond=5; % [°C] : Temperature pinch at condenser %%
+        options.TpinchSub=4; %  [°C] : Temperature pinch at the subcooler %%
+        options.TpinchEx=10; %   [°C] : Temperature pinch at a heat exchanger %%
+        options.TpinchCond=6; % [°C] : Temperature pinch at condenser %%
         options.Tdrum=148.7; %      [°C] : minimal drum temperature  %%
         options.eta_SiC=0.85; %     [-] : Isotrenpic efficiency for compression %%
-        options.eta_SiT=[0.9271 0.8874]; %     [-] : Isotrenpic efficiency for Turbine. It can be a vector of 2 values :
+        options.eta_SiT=[0.89 0.89]; %     [-] : Isotrenpic efficiency for Turbine. It can be a vector of 2 values :
         %             	             eta_SiT(1)=eta_SiT_HP,eta_SiT(2)=eta_SiT_others
         %             	             %%
     end
@@ -170,7 +170,7 @@ if ~isfield(options,'T_cond_out')
 end
 
 if ~isfield(options,'p3_hp')    
-   options.p3_hp=31e6; % [bar]
+   options.p3_hp=31; % [bar]
 end
 
 if ~isfield(options,'comb')    
@@ -252,14 +252,14 @@ h0=XSteam('hL_T',T_0-273.15);
 s0=XSteam('sL_T',T_0-273.15);
 
 t3=options.T_max; % [°C]
-p3=options.p3_hp*1e-5; % [bar]
+p3=options.p3_hp; % [bar]
 h3=XSteam('h_pT',p3,t3);
 s3=XSteam('s_pT',p3,t3);
 x3=nan; % Vapeur surchaufée
 e3=(h3-h0)-T_0*(s3-s0); % [kJ/kg]
 
 %Etat 4
-p4=options.p_3*1e-5/k_cc;
+p4=options.p_3/k_cc;
 [ti,pi,hi,si,xi] = expansion(eta_SiT(1),t3,p3,h3,s3,x3,p4,0);
 t4=ti(end);
 p4=pi(end);
@@ -271,7 +271,7 @@ e4=(h4-h0)-T_0*(s4-s0);
 %Etat 5
 if options.reheat==1
     t5=t3;
-    p5=options.p_3*1e-5;
+    p5=options.p_3;
     h5=XSteam('h_pT',p5,t5);
     s5=XSteam('s_pT',p5,t5);
     e5=(h5-h0)-T_0*(s5-s0);
