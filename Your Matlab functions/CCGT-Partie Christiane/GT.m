@@ -124,7 +124,7 @@ end
     X=0;
     Y=4;
     cpMoyenComb=(35.26)/(MasseMolaireCombustible(Y,X));
-    solutionT4etLambda = fsolve(@(x)fun00(x,Y,X),xf); %Determination de T4 et lambda
+    solutionT4etLambda = fsolve(@(x)fun00(x,Y,X,solutionNaetT2(2)),xf); %Determination de T4 et lambda
     lambda=solutionT4etLambda(2);
     %%%
     TemperatureEtats=[T1,solutionNaetT2(2),T3,solutionT4etLambda(1)];%en Kelvin
@@ -137,7 +137,7 @@ end
     exergie = exergy(enth,entrop);%kJ/kg
     %%%
     matriceEtats=ones(5,4);
-    matriceEtats(1,:)=TemperatureEtats-273;
+    matriceEtats(1,:)=TemperatureEtats-273.15;
     matriceEtats(2,:)=pressions;
     matriceEtats(3,:)=enth;
     matriceEtats(4,:)=entrop;
@@ -179,7 +179,7 @@ end
     eta_cyclEx = rdtCyclExergetique(Pm,exergieVector,MFair,MFfumee);
     eta_totEx = rdtTotalExergetique(Pe,Pcomb);
     eta_rotEx = rdtRotorExergetique(Pm,exergieVector,MFair,MFfumee);
-    eta_combEx = rdtCombExergetique(exergieVector,MFfumee,Pcomb);
+    eta_combEx = rdtCombExergetique(exergieVector,MFfumee,Pcomb,er);
     eta_meca = rdtMecanique(Pe,Pm);
     
     %%%%%OUTPUT VARIABLES%%%%%
@@ -199,6 +199,7 @@ end
     
     %%%% CALCUL ECHANGEUR DE CHALEUR %%%%
     %Calcul de T2R en fonction du NTU
+    %options.NTU=4;
     T2R=(TemperatureEtats(4)*options.NTU+TemperatureEtats(2))/(1+options.NTU);
     t2R=T2R-273.15;
     %Calcul de T5 en fonction d'un bilan d'energie
@@ -255,12 +256,11 @@ end
     end
 
     %%%%%PARTIE COMBUSTION%%%%%
-    function eqq = calculNgT4(x,Y,X)
+    function eqq = calculNgT4(x,Y,X,T2)
     eta_PiT=options.eta_PiT;%x(1)=T4 x(2)=lambda
     k_cc=options.k_cc;
     Tcomb=T0+options.T_ext;
     r=options.r;
-    T2=solutionNaetT2(2);
     T3=273.15+options.T_3;
     eqq=ones(2,1);
     eqq(1,1)=log(x(1)/T3) - (eta_PiT*constanteRfumee(Y,X,x(2))/cpMoyenFumee(x(1),T3,Y,X,x(2)))*log(1/(k_cc*r));
@@ -474,7 +474,7 @@ end
     eta_rotEx=Pm/((MFfumee*(exergieVector(3)-exergieVector(4))-MFair*(exergieVector(2)-exergieVector(1)))*10^(-3));
     end
 
-    function eta_combEx = rdtCombExergetique(exergieVector,MFfumee,Pcomb)
+    function eta_combEx = rdtCombExergetique(exergieVector,MFfumee,Pcomb,er)
     eta_combEx=MFfumee*(exergieVector(3)-er)*(10^(-3))/(Pcomb);
     end
 
