@@ -111,7 +111,7 @@ if nargin<3
         options.nsout=8; %   [-] : Number of feed-heating %%
         options.reheat=1; %    [-] : Number of reheating %%
         options.T_max=565; %     [°C] : Maximum steam temperature %%
-        options.T_cond_out=26; %[°C] : Condenseur cold outlet temperature %%
+        options.T_cond_out=24; %[°C] : Condenseur cold outlet temperature %%
         options.p3_hp=310; %     [bar] : Maximum pressure  %%
         options.drumFlag=1; %   [-] : if =1 then drum if =0 => no drum.  %%
         options.eta_mec=0.99; %    [-] : mecanic efficiency of shafts bearings %%
@@ -127,7 +127,7 @@ if nargin<3
         options.T_0=15; %        [°C] : Reference temperature %%
         options.TpinchSub=4; %  [°C] : Temperature pinch at the subcooler %%
         options.TpinchEx=10; %   [°C] : Temperature pinch at a heat exchanger %%
-        options.TpinchCond=6; % [°C] : Temperature pinch at condenser %%
+        options.TpinchCond=8; % [°C] : Temperature pinch at condenser %%
         options.Tdrum=148.7; %      [°C] : minimal drum temperature  %%
         options.eta_SiC=0.85; %     [-] : Isotrenpic efficiency for compression %%
         options.eta_SiT=[0.89 0.89]; %     [-] : Isotrenpic efficiency for Turbine. It can be a vector of 2 values :
@@ -142,7 +142,7 @@ end
 if isfield(options,'T_0')
     T_0 = options.T_0+273.15;
 else
-    T_0 = 288.15;  % [°C]
+    T_0 = 288.15;  % [K]
 end
 
 if ~isfield(options,'drumFlag')
@@ -150,7 +150,7 @@ if ~isfield(options,'drumFlag')
 end
 
 if ~isfield(options,'eta_mec')
-    options.eta_mec=0.98;
+    options.eta_mec=0.99;
 end
 
 if ~isfield(options,'nsout')
@@ -166,11 +166,11 @@ if ~isfield(options,'T_max')
 end
 
 if ~isfield(options,'T_cond_out')
-    options.T_cond_out=28; % [°C]
+    options.T_cond_out=26; % [°C]
 end
 
 if ~isfield(options,'p3_hp')
-    options.p3_hp=31; % [bar]
+    options.p3_hp=310; % [bar]
 end
 
 if ~isfield(options,'comb')
@@ -195,8 +195,19 @@ if ~isfield(options,'T_exhaust')
     options.T_exhaust=0; % [°C]
 end
 
-if ~isfield(options,'p_3')
-    options.p_3=7e6; % bar[]
+if ~isfield(options,'eta_SiC')
+    options.eta_SiC=0.85;
+end
+
+if ~isfield(options,'eta_SiT')
+    options.eta_SiT=[0.89 0.89];
+end
+
+if (~isfield(options,'p_3') && isfield(options,'x4'))
+    options.p_3=detente(eta_SiT(1),options.TpinchCond+options.T_cond_out,...
+        options.x4,options.T_max); % [bar]
+else
+    options.p_3=0.2*options.p3_hp;
 end
 
 if ~isfield(options,'x4')
@@ -208,27 +219,23 @@ if ~isfield(options,'p_3')
 end
 
 if ~isfield(options,'TpinchSub')
-    options.TpinchSub=0; % [°C]
+    options.TpinchSub=4; % [°C]
 end
 
 if ~isfield(options,'TpinchEx')
-    options.TpinchEx=0; % [°C]
+    options.TpinchEx=8; % [°C]
 end
 
 if ~isfield(options,'TpinchCond')
-    options.TpinchCond=5; % [°C]
+    options.TpinchCond=10; % [°C]
 end
 
 if ~isfield(options,'Tdrum')
     options.Tdrum=148.7; % [°C]
 end
 
-if ~isfield(options,'eta_SiC')
-    options.eta_SiC=0.85;
-end
-
-if ~isfield(options,'eta_SiT')
-    options.eta_SiT=[0.9271 0.8874];
+if ~isfield(options,'kcc')
+    options.k_cc=6.2/7; % [-] : Coefficient of pressure losses in the boiler
 end
 
 %
@@ -237,9 +244,9 @@ eta_SiT=options.eta_SiT;
 TpinchSub=options.TpinchSub;
 TpinchEx=options.TpinchEx;
 eta_SiC=options.eta_SiC;
-k_cc=6.2/7; % [-] : Coefficient of pressure losses in the boiler
-%
+k_cc= options.k_cc; % [-] : Coefficient of pressure losses in the boiler
 
+%
 %Prealocations
 t6=zeros(nsout+1,1);
 p6=zeros(nsout+1,1);
@@ -255,7 +262,7 @@ t3=options.T_max; % [°C]
 p3=options.p3_hp; % [bar]
 h3=XSteam('h_pT',p3,t3);
 s3=XSteam('s_pT',p3,t3);
-x3=nan; % Vapeur surchaufée
+x3=1; % Vapeur surchaufée
 e3=(h3-h0)-T_0*(s3-s0); % [kJ/kg]
 
 %Etat 4
@@ -500,82 +507,87 @@ ETA(9)= Q_Ix/(mf*(ef-e_exh)); %eta_transex
 
 % Plots
 if display ==1
-    %Cloche T-S
-    S_plot=linspace(0,9.156,300);
-    T_HS=zeros(size(S_plot));
-    H_HS=zeros(size(S_plot));
-    for c=1:length(T_HS)
-        T_HS(c)=XSteam('Tsat_s',S_plot(c));
-    end
-    [~,ind_tmax]=max(T_HS);
-    for c=1:ind_tmax
-        H_HS(c)=XSteam('hL_T',T_HS(c));
-    end
-    for c=ind_tmax+1:length(T_HS)
-        H_HS(c)=XSteam('hV_T',T_HS(c));
-    end
-    
-    % cells (It's easier to plot with cells)
-    s_cell= { s1; s2 ; s3 ; s4 ; s5 ; s6' ; s7 ;  s8 ; s9 };
-    t_cell= { t1; t2 ; t3 ; t4 ; t5 ; t6' ; t7 ;  t8 ; t9 };
-    h_cell= { h1; h2 ; h3 ; h4 ; h5 ; h6' ; h7 ;  h8 ; h9 };
-    
-    % T-S Diagram
-    figure
-    hold on
-    plot(S_plot,T_HS);
-    leg=cell(10,1);
-    leg{1}='Saturation curve';
-    for c=1:9
-        plot(s_cell{c},t_cell{c},'*')
-        leg{c+1}=['State ' num2str(c)];
-    end
-    legend(leg)
-    title('Steam turbine T-s diagram');
-    ylabel('Temperature [°C]');
-    xlabel('Entropy [kJ/kg.K]');
-    
-    for c=1:9
-        plot_TS(c);
-    end
-    
-    % H-S Diagram
-    figure
-    hold on
-    plot(S_plot,H_HS);
-    title('Steam turbine h-s diagram');
-    ylabel('Temperature [°C]');
-    xlabel('Enthalpie [kJ/kg.K]');
-    legh=cell(10,1);
-    legh{1}='Saturation curve';
-    for c=1:9
-        plot(s_cell{c},h_cell{c},'*')
-        legh{c+1}=['State ' num2str(c)];
-    end
-    legend(legh)
-    
-    for c=1:9
-        plot_HS(c);
-    end
-    
-    figure
-    pie([P_e ; DATEN],{sprintf('%s \n %.1f [MW]','Effective power',P_e*1e-3),...
-        sprintf('%s \n %.1f [MW]','Generator losses',DATEN(1)*1e-3),...
-        sprintf('%s \n %.1f [MW]','Mechanical losses',DATEN(2)*1e-3),...
-        sprintf('%s \n %.1f [MW]','Condensor loss',DATEN(3)*1e-3)});
-    title(sprintf('Steam Turbine Energy pie chart \n Primary power :  %.1f [MW]',mc*LHV*1e-3));
-    
-    
-    figure
-    pie([P_e ; DATEX(1); DATEX(3:end)],{sprintf('%s \n %.1f [MW]','Effective power',P_e*1e-3),...
-        sprintf('%s \n %.1f [MW]','Mechanical losses',DATEX(1)*1e-3),...
-        sprintf('%s \n %.1f [MW]','Turbine & compressor irreversibilities',DATEX(3)*1e-3),...
-        sprintf('%s \n %.1f [MW]','Combustion irreversibility',DATEX(4)*1e-3)...
-        sprintf('%s \n %.1f [MW]','Condensor loss',DATEX(5)*1e-3),...
-        sprintf('%s \n %.1f [MW]','Chemney loss',DATEX(6)*1e-3),sprintf('%s : %.1f [MW]','Heat transfer loss',DATEX(7)*1e-3)});
-    title(sprintf('Steam Turbine Exergy pie chart \n Primary exergy flux :  %.1f [MW]',mc*ec*1e-3));
-    
+    disp='on';
+else
+    disp='off';
 end
+%Cloche T-S
+S_plot=linspace(0,9.156,300);
+T_HS=zeros(size(S_plot));
+H_HS=zeros(size(S_plot));
+for c=1:length(T_HS)
+    T_HS(c)=XSteam('Tsat_s',S_plot(c));
+end
+[~,ind_tmax]=max(T_HS);
+for c=1:ind_tmax
+    H_HS(c)=XSteam('hL_T',T_HS(c));
+end
+for c=ind_tmax+1:length(T_HS)
+    H_HS(c)=XSteam('hV_T',T_HS(c));
+end
+
+% cells (It's easier to plot with cells)
+s_cell= { s1; s2 ; s3 ; s4 ; s5 ; s6' ; s7 ;  s8 ; s9 };
+t_cell= { t1; t2 ; t3 ; t4 ; t5 ; t6' ; t7 ;  t8 ; t9 };
+h_cell= { h1; h2 ; h3 ; h4 ; h5 ; h6' ; h7 ;  h8 ; h9 };
+
+FIG = gobjects(4,1);
+
+% T-S Diagram
+FIG(1)=figure('visible',disp);
+hold on
+plot(S_plot,T_HS);
+leg=cell(10,1);
+leg{1}='Saturation curve';
+for c=1:9
+    plot(s_cell{c},t_cell{c},'*')
+    leg{c+1}=['State ' num2str(c)];
+end
+legend(leg)
+title('Steam turbine T-s diagram');
+ylabel('Temperature [°C]');
+xlabel('Entropy [kJ/kg.K]');
+
+for c=1:9
+    plot_TS(c);
+end
+
+% H-S Diagram
+FIG(2)=figure('visible',disp);
+hold on
+plot(S_plot,H_HS);
+title('Steam turbine h-s diagram');
+ylabel('Temperature [°C]');
+xlabel('Enthalpie [kJ/kg.K]');
+legh=cell(10,1);
+legh{1}='Saturation curve';
+for c=1:9
+    plot(s_cell{c},h_cell{c},'*')
+    legh{c+1}=['State ' num2str(c)];
+end
+legend(legh)
+
+for c=1:9
+    plot_HS(c);
+end
+
+FIG(3)=figure('visible',disp);
+pie([P_e ; DATEN],{sprintf('%s \n %.1f [MW]','Effective power',P_e*1e-3),...
+    sprintf('%s \n %.1f [MW]','Generator losses',DATEN(1)*1e-3),...
+    sprintf('%s \n %.1f [MW]','Mechanical losses',DATEN(2)*1e-3),...
+    sprintf('%s \n %.1f [MW]','Condensor loss',DATEN(3)*1e-3)});
+title(sprintf('Steam Turbine Energy pie chart \n Primary power :  %.1f [MW]',mc*LHV*1e-3));
+
+
+FIG(4)=figure('visible',disp);
+pie([P_e ; DATEX(1); DATEX(3:end)],{sprintf('%s \n %.1f [MW]','Effective power',P_e*1e-3),...
+    sprintf('%s \n %.1f [MW]','Mechanical losses',DATEX(1)*1e-3),...
+    sprintf('%s \n %.1f [MW]','Turbine & compressor irreversibilities',DATEX(3)*1e-3),...
+    sprintf('%s \n %.1f [MW]','Combustion irreversibility',DATEX(4)*1e-3)...
+    sprintf('%s \n %.1f [MW]','Condensor loss',DATEX(5)*1e-3),...
+    sprintf('%s \n %.1f [MW]','Chemney loss',DATEX(6)*1e-3),sprintf('%s : %.1f [MW]','Heat transfer loss',DATEX(7)*1e-3)});
+title(sprintf('Steam Turbine Exergy pie chart \n Primary exergy flux :  %.1f [MW]',mc*ec*1e-3));
+
 
     function [ti,pi,hi,si,xi] = expansion(eta_SiT,t_in,p_in,h_in,s_in,x_in,p_out,nsout)
         % ti,pi,hi,si,xi: state of the feed-heatings
@@ -638,7 +650,7 @@ end
         x_out = XSteam('x_ps',p_out,s_out);
         
         if x_out < 0.88
-            error('The turbine can only work with x < 0.88')
+            error('The turbine can only work with x > 0.88')
         end
     end
 
