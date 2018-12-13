@@ -425,7 +425,7 @@ mf=m_air+mc;
 
 m2=m3; % flow rate a point 2
 MASSFLOW(1)=m_air;
-MASSFLOW(2)=m2;
+MASSFLOW(2) = m3;
 MASSFLOW(3)=mc;
 MASSFLOW(4)=mf;
 
@@ -1109,7 +1109,7 @@ end
                 
             case 9 % Line 9o-1
                 if options.drumFlag==1
-                    t=linspace(t9(1),t9(ind_drum-1),n_pt);
+                    t=linspace(t9(1),t9(ind_drum),n_pt);
                 else
                     t=linspace(t9(1),t1,n_pt);
                 end
