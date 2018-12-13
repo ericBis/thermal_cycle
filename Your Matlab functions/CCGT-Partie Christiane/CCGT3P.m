@@ -62,31 +62,29 @@ if nargin<3
    if nargin<2
         options=struct();
        if nargin<1
-           P_eg=100e3;%100MW
+           P_eg=225e3;%100MW
        end
-%        %%%%%DESCRIPTION DE LA STRUCTURE%%%%%
-%   P_eg = 225e3; %[kW]
-%   options=struct;
-%   options.T0 =15; %[°C]:Reference temperature
-%   options.T_ext=15; %[°C]:External temperature
-%   options.T_STmax=565; %[°C]:maximum temperature on ST cycle
-%   options.eta_mec=0.96; %[-]:mecanic efficiency of shafts bearings
-%   options.pdrum=4; %[bar]:Drum pressure
-%   options.pmid=28; %[bar]:Intermediary pressure level
-%   options.x7=0.95;
-%   options.eta_SiC=0.857;
-%   options.eta_SiT=0.857;
-%   options.GT=struct;%[struct]
-%            options.GT.k_mec=0.015;
-%            options.GT.T_0=15;
-%            options.GT.T_ext=15;
-%            options.GT.r=15;
-%            options.GT.k_cc=0.95;  
-%            options.GT.T_3=1250;   
-%            options.GT.eta_PiC=0.9;
-%            options.GT.eta_PiT=0.9;
-%   display = 1;   %If 1,plot. If 0,do not plot.
-       
+       %%%%%DESCRIPTION DE LA STRUCTURE%%%%%
+  P_eg = 225e3; %[kW]
+  options=struct;
+  options.T0 =15; %[°C]:Reference temperature
+  options.T_ext=15; %[°C]:External temperature
+  options.T_STmax=565; %[°C]:maximum temperature on ST cycle
+  options.eta_mec=0.96; %[-]:mecanic efficiency of shafts bearings
+  options.pdrum=4; %[bar]:Drum pressure
+  options.pmid=28; %[bar]:Intermediary pressure level
+  options.x7=0.95;
+  options.eta_SiC=0.857;
+  options.eta_SiT=0.857;
+  options.GT=struct;%[struct]
+           options.GT.k_mec=0.015;
+           options.GT.T_0=15;
+           options.GT.T_ext=15;
+           options.GT.r=15;
+           options.GT.k_cc=0.95;  
+           options.GT.T_3=1250;   
+           options.GT.eta_PiC=0.9;
+           options.GT.eta_PiT=0.9;
    end
 end
 
@@ -313,7 +311,7 @@ end
   pie(dataExerg,labelsExerg);
   title(strcat('Puiss. exergétique primaire:',num2str(PuissanceExergPrimaire*(10^(-3))),'MW'));
 
-    %%%%PIE CHART ENERG%%%%
+  %%%%PIE CHART ENERG%%%%
   figure(2)
   dataEnerg = [PerteEnergCheminee,PerteEnergCondenseur,PerteMecaCCGT,PuissanceEffectiveST,PuissanceEffectiveGT]*(10^(-3));
   labelsEnerg = {strcat('Perte cheminee:',num2str(dataEnerg(1)),'MW'),strcat('Perte condenseur:',num2str(dataEnerg(2)),'MW'),strcat('Perte meca CCGT:',num2str(dataEnerg(3)),'MW'),strcat('Puiss. TV:',num2str(dataEnerg(4)),'MW'),strcat('Puiss. TG:',num2str(dataEnerg(5)),'MW')};

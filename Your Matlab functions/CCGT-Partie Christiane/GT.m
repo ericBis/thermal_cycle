@@ -87,17 +87,17 @@ if nargin<3
        if nargin<1
            P_e=100;%100MW
        end
-      %%%%%DESCRIPION DE LA STRUCTURE%%%%%
-%       options = struct;
-%       options.k_mec=0.015;
-%       options.T_0=15;
-%       options.T_ext=15; 
-%       options.r=18;   
-%       options.k_cc=0.95;  
-%       options.T_3=1400;   
-%       options.eta_PiC=0.9; 
-%       options.eta_PiT=0.9;
-%       options.NTU=4;
+      %%%%DESCRIPION DE LA STRUCTURE%%%%%
+      options = struct;
+      options.k_mec=0.015;
+      options.T_0=15;
+      options.T_ext=15; 
+      options.r=18;   
+      options.k_cc=0.95;  
+      options.T_3=1400;   
+      options.eta_PiC=0.9; 
+      options.eta_PiT=0.9;
+      options.NTU=4;
    end
 end
 
