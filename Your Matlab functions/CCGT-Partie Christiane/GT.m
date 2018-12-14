@@ -97,7 +97,7 @@ if nargin<3
       options.T_3=1400;   
       options.eta_PiC=0.9; 
       options.eta_PiT=0.9;
-      options.NTU=4;
+%       options.NTU=4;
    end
 end
 
@@ -197,18 +197,18 @@ end
     COMBUSTION.Cp_g=cpFumeeAt400K;
     COMBUSTION.fum=MFComposition;
     
-    %%%% CALCUL ECHANGEUR DE CHALEUR %%%%
-    %Calcul de T2R en fonction du NTU
-    %options.NTU=4;
-    T2R=(TemperatureEtats(4)*options.NTU+TemperatureEtats(2))/(1+options.NTU);
-    t2R=T2R-273.15;
-    %Calcul de T5 en fonction d'un bilan d'energie
-    fun000=@calculTemperatureT5;
-    x000=85;%[K]
-    T5 = fsolve(@(x)fun000(x),x000);
-    deltaPinchT4_T2R=TemperatureEtats(4)-T2R; %[K] deltaPinchT4_T2R < deltaT5_T2
-    deltaT5_T2=T5-TemperatureEtats(2);%[K] 
-    eta_EchangeurCyclenGT = eta_ExchangeCyclenGT();
+%     %%%% CALCUL ECHANGEUR DE CHALEUR %%%%
+%     %Calcul de T2R en fonction du NTU
+%     %options.NTU=4;
+%     T2R=(TemperatureEtats(4)*options.NTU+TemperatureEtats(2))/(1+options.NTU);
+%     t2R=T2R-273.15;
+%     %Calcul de T5 en fonction d'un bilan d'energie
+%     fun000=@calculTemperatureT5;
+%     x000=85;%[K]
+%     T5 = fsolve(@(x)fun000(x),x000);
+%     deltaPinchT4_T2R=TemperatureEtats(4)-T2R; %[K] deltaPinchT4_T2R < deltaT5_T2
+%     deltaT5_T2=T5-TemperatureEtats(2);%[K] 
+%     eta_EchangeurCyclenGT = eta_ExchangeCyclenGT();
     
     %%%% PLOTS %%%%%
     %Pie chart

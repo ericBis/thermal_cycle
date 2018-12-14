@@ -333,7 +333,7 @@ end
 figure()
 hold on;
 plot(S_plot,H_HS);
-for i=1:1
+for i=1:10
 plot_HS(i);
 end
   
@@ -402,10 +402,11 @@ end
         end
   end
 
-  function [t2,h2,s2,x2,e2] = detente(eta_SiT,p2,h1,s1)
+  function [t2,h2,s2,x2,e2] = detente(eta_SiC,p2,h1,s1)
        % Adiabatic compression
        h_2s=XSteam('h_ps',p2,s1);
-       h2= h1 + eta_SiT*(h_2s - h1); 
+       h2=h1+1/eta_SiC*(h_2s-h1);
+       h2= h1 + eta_SiT*(h_outs - h_in); 
        s2=XSteam('s_ph',p2,h2);
        x2=XSteam('x_ph',p2,h2);
        t2=XSteam('T_ph',p2,h2);
@@ -723,63 +724,11 @@ end
                 h(end)=H10_seconde;
                 plot(s,h,'k','HandleVisibility','off');
               
-            case 11 %3-4
-                p=linspace(P3,P4,n_pt);
-                h=zeros(size(p));
-                s=zeros(size(p));
-                s(1)=S3;
-                h(1)=H3;
-                for k=2:n_pt-1
-                    [~,h(k),s(k),~,~] = detente(options.eta_SiT,p(k),H3,S3);
-                end
-                h(end)=H4;
-                s(end)=S4;
-                plot(s,h,'k','HandleVisibility','off');
-
-            case 12 %5-6
-                p=linspace(P5,P6,n_pt);
-                h=zeros(size(p));
-                s=zeros(size(p));
-                s(1)=S5;
-                h(1)=H5;
-                for k=2:n_pt-1
-                    [~,h(k),s(k),~,~] = detente(options.eta_SiT,p(k),H5,S5);
-                end
-                h(end)=H6;
-                s(end)=S6;
-                plot(s,h,'k','HandleVisibility','off');
-            case 13 %6-7
-                p=linspace(P6,P7,n_pt);
-                h=zeros(size(p));
-                s=zeros(size(p));
-                s(1)=S6;
-                h(1)=H6;
-                for k=2:n_pt-1
-                    [~,h(k),s(k),~,~] = detente(options.eta_SiT,p(k),H6,S6);
-                end
-                h(end)=H7;
-                s(end)=S7;
-                plot(s,h,'k','HandleVisibility','off');
-            case 14 %9''-9
-                p=linspace(P9_seconde,P9,n_pt);
-                s=linspace(S9_seconde,S9,n_pt);
-                h=zeros(size(s));
-                h(1)=H9_seconde;
-                for k=2:n_pt-1
-                    h(k)=XSteam('h_ps',p(k),s(k));
-                end
-                h(end)=H9;
-                plot(s,h,'k','HandleVisibility','off');
-            case 15 %9-4    
-                p=linspace(P9,P4,n_pt);
-                s=linspace(S9,S4,n_pt);
-                h=zeros(size(s));
-                h(1)=H9;
-                for k=2:n_pt-1
-                    h(k)=XSteam('h_ps',p(k),s(k));
-                end
-                h(end)=H4;
-                plot(s,h,'k','HandleVisibility','off');
+            case 11 %manque les fonctions pour les expansions
+            case 12 %manque les fonctions pour les expansions
+            case 13 %manque les fonctions pour les expansions
+                
+                
         end
     end
                 
