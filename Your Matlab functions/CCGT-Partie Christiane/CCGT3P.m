@@ -86,6 +86,7 @@ if nargin<3
 %            options.GT.eta_PiC=0.9;
 %            options.GT.eta_PiT=0.9;
 %            options.GT.NTU=0;
+%            options.GT.ER=0;
    end
 end
 
