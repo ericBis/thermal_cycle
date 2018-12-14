@@ -557,8 +557,8 @@ FIG(2)=figure('visible',disp);
 hold on
 plot(S_plot,H_HS);
 title('Steam turbine h-s diagram');
-ylabel('Temperature [°C]');
-xlabel('Enthalpie [kJ/kg.K]');
+ylabel('Enthalpie [°C]');
+xlabel('Entropy [kJ/kg.K]');
 legh=cell(10,1);
 legh{1}='Saturation curve';
 for c=1:9

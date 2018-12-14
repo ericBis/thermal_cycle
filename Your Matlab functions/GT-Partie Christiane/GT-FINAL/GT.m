@@ -217,25 +217,50 @@ else
     disp='off';
 end
 
+FIG = gobjects(4,1);
+n_pt=30;
+t=zeros(4*n_pt,1);
+s=zeros(4*n_pt,1);
+h=zeros(4*n_pt,1);
+kn=1;
+
+for k=1:4
+    [t(kn:kn+n_pt-1),s(kn:kn+n_pt-1),h(kn:kn+n_pt-1)]=plot_TS_TH(k,n_pt);
+    kn=kn+n_pt;
+end
+
 %T-S
 FIG(1)=figure('visible',disp);
 hold on
+title('Gas turbine T-s diagram');
+ylabel('Temperature [°C]');
+xlabel('Entropy [kJ/kg.K]');
 leg{1}='';
-for c=1:4
-    plot(entrop(c),TemperatureEtats(c),'*')
-    leg{c}=['Etat ' num2str(c)];
+for k=1:4
+    plot(entrop(k),TemperatureEtats(k),'*')
+    leg{k}=['Etat ' num2str(k)];
 end
 legend(leg)
+plot(s,t,'k','HandleVisibility','off');
 
-optimoptions(@lsqnonlin,'display','off'); % Masque les messages de lsqnonlin
-for k=1:1
-    plot_TS(k)
+%H-S
+FIG(2)=figure('visible',disp);
+hold on
+title('Gas turbine h-s diagram');
+ylabel('Enthalpie [°C]');
+xlabel('Entropy [kJ/kg.K]');
+leg{1}='';
+for k=1:4
+    plot(entrop(k),enth(k),'*')
+    leg{k}=['Etat ' num2str(k)];
 end
+legend(leg)
+plot(s,h,'k','HandleVisibility','off');
 
 %Pie chart
-data = [Pfm,Protex,Pcomb,PexhExerg];
-labels = {strcat('Mechanical losses:',num2str(data(1)),'MW'),strcat('Mechanical exergetic power:',num2str(data(2)),'MW'),strcat('Primary exergy input:',num2str(data(3)),'MW'),strcat('Exhaust exergy losses:',num2str(data(4)),'MW')};
-pie(data,labels);
+% data = [Pfm,Protex,Pcomb,PexhExerg];
+% labels = {strcat('Mechanical losses:',num2str(data(1)),'MW'),strcat('Mechanical exergetic power:',num2str(data(2)),'MW'),strcat('Primary exergy input:',num2str(data(3)),'MW'),strcat('Exhaust exergy losses:',num2str(data(4)),'MW')};
+% pie(data,labels);
 
 %%%%%%%%%%%%%%%%%%%%%%%ALL FUNCTIONS OF GT%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -529,75 +554,109 @@ pie(data,labels);
 
 
 
-    function plot_TS(ind)
-        n_pt=50;
+    function [t,S,H]=plot_TS_TH(ind,n_pt)
         optis = optimset('Display','off');
         switch ind
             case 1 % Line 1-2
                 p=linspace(pressions(1),pressions(2),n_pt);
                 t=linspace(TemperatureEtats(1),TemperatureEtats(2),n_pt);
                 S=zeros(size(p));
+                H=zeros(size(p));
                 S(1)=entrop(1);
                 t(1)=TemperatureEtats(1);
+                H(1)=enth(1);
                 x0 = [1.2,295];                
                 for c=2:n_pt-1
-                    NaT = lsqnonlin(@(x) calculNaT12_plot(p(c),x),x0,[0 0],[100 2000],optis); %Determination de na et T
+                    NaT = lsqnonlin(@(x) calculNaT12_plot(p(c),x),...
+                        x0,[0 0],[100 2000],optis); %Determination de na et T
                     t(c)=NaT(2);
                     x0 = NaT;
-                    S(c)=entropy_plot12(t(c),p(c));
+                    S(c)=entropy_plotAir(t(c),p(c));
+                    H(c)=cpMoyenAir(T0,t(c))*(t(c)-T0);
                 end
                 t(end)=TemperatureEtats(2);
                 S(end)=entrop(2);
-                plot(S,t,'r','HandleVisibility','off');
+                H(end)=enth(2);
+               % plot(S,t,'k','HandleVisibility','off');
             case 2 % Line 2-3
-                p=linspace(pressions(2),pressions(3),n_pt); % On suposse une chute de pression lineaire à l'entropie
-                s=linspace(s2,s3,n_pt);
-                t=zeros(size(s));
-                t(1)=t2;
-                for k=2:n_pt-1
-                    t(k)=XSteam('T_ps',p(k),s(k));
+                p=linspace(pressions(2),pressions(3),n_pt); % On suposse une chute de pression lineaire l'augmentation de temperature
+                t=linspace(TemperatureEtats(2),TemperatureEtats(3),n_pt);
+                S=zeros(size(p));
+                H=zeros(size(p));
+                S(1)=entrop(2);
+                t(1)=TemperatureEtats(2);
+                H(1)=enth(2);
+for c=2:n_pt-1
+                    S(c)=entropy_plotFum(t(c),p(c));
+                    H(c)=cpMoyenFumee(T0,t(c),Y,X,lambda)*(t(c)-T0);
                 end
-                t(end)=t3;
-                plot(s,t,'k','HandleVisibility','off');
+                t(end)=TemperatureEtats(3);
+                S(end)=entrop(3);
+                H(end)=enth(3);
+               % plot(S,t,'k','HandleVisibility','off');
             case 3 % Line 3-4
-                p=linspace(p3,p4,n_pt);
-                t=zeros(size(p));
-                s=zeros(size(p));
-                t(1)=t3;
-                s(1)=s3;
-                for k=2:n_pt-1
-                    [T4,~,~,S4,~] = expansion(eta_SiT(1),...
-                        t3,p3,h3,s3,x3,p(k),0);
-                    t(k)=T4(end);
-                    s(k)=S4(end);
+                p=linspace(pressions(3),pressions(4),n_pt);
+                t=linspace(TemperatureEtats(3),TemperatureEtats(4),n_pt);
+                S=zeros(size(p));
+                H=zeros(size(p));
+                S(1)=entrop(3);
+                t(1)=TemperatureEtats(3);
+                H(1)=enth(3);
+                x0 = [700, 1.1];                
+                for c=2:n_pt-1
+                    NgT = lsqnonlin(@(x) calculNgT34_plot(p(c),x),x0,...
+                        [0 0],[2000 5],optis); %Determination de na et T
+                    t(c)=NgT(1);
+                    x0 = NgT;
+                    S(c)=entropy_plotFum(t(c),p(c));
+                    H(c)=cpMoyenFumee(T0,t(c),Y,X,lambda)*(t(c)-T0);
                 end
-                t(end)=t4;
-                s(end)=s4;
-                plot(s,t,'k','HandleVisibility','off');
+                t(end)=TemperatureEtats(4);
+                S(end)=entrop(4);
+                H(end)=enth(4);
+             %   plot(S,t,'k','HandleVisibility','off');
             case 4 % Line 4-1
-                if options.reheat==1
-                    p=linspace(p4,p5,n_pt);
-                    s=linspace(s4,s5,n_pt);
-                    t=zeros(size(s));
-                    t(1)=t4;
-                    for k=2:n_pt-1
-                        t(k)=XSteam('T_ps',p(k),s(k));
-                    end
-                    t(end)=t5;
-                    plot(s,t,'k','HandleVisibility','off');
+                p=linspace(pressions(4),pressions(1),n_pt); % On suposse une chute de pression lineaire l'augmentation de temperature
+                t=linspace(TemperatureEtats(4),TemperatureEtats(1),n_pt);
+                S=zeros(size(p));
+                H=zeros(size(p));
+                S(1)=entrop(4);
+                t(1)=TemperatureEtats(4);
+                H(1)=enth(4);
+                for c=2:n_pt-1
+                    S(c)=entropy_plotFum(t(c),p(c));
+                    H(c)=cpMoyenFumee(T0,t(c),Y,X,lambda)*(t(c)-T0);
                 end
+                t(end)=TemperatureEtats(1);
+                S(end)=entrop(1);
+                H(end)=enth(1);
+            %   plot(S,t,'k','HandleVisibility','off');
         end
     end
 
     function eq = calculNaT12_plot(p,x)
         %eq est un vecteur colonne qui determine na et T
-        %x(1)=na et x(2)=T2
+        %x(1)=na et x(2)=T
         r=p/pressions(1);
         eq=ones(2,1);
         eq(1,1)= (x(1)-1)/x(1) - (1/options.eta_PiC)*(constanteRair/cpMoyenAir(T1,x(2)));
         eq(2,1)= x(2)/T1 -r^((x(1)-1)/x(1));
     end
-    function entrop = entropy_plot12(Temp,p)
+
+    function eq = calculNgT34_plot(p,x)
+        %eq est un vecteur colonne qui determine ng et T
+        %x(1)=T x(2)=lambda
+        r=options.r;
+        T2=solutionNaetT2(2);
+        T3=273.15+options.T_3;
+        Tcomb=T0+options.T_ext;
+        eq=ones(2,1);
+        eq(1)=log(x(1)/T3) - (options.eta_PiT*constanteRfumee(Y,X,x(2))/...
+            cpMoyenFumee(x(1),T3,Y,X,x(2)))*log(p/pressions(3));
+        eq(2)=(T3-T0)-((1-0.01)*PouvoirCalorifiqueInf(Y,X)+x(2)*pouvoirComburivore(Y,X)*cpMoyenAir(T0,T2)*(T2-T0)+cpMoyenComb*(Tcomb-T0))/(((pouvoirComburivore(Y,X))*x(2)+1)*cpMoyenFumee(T0,T3,Y,X,x(2)));
+    end
+
+    function entrop = entropy_plotAir(Temp,p)
         fun1=@(T)CpAir(T)./T;
         fun2=@(p)constanteRair./p;
         
@@ -605,4 +664,11 @@ pie(data,labels);
         
     end
 
-end
+    function entrop = entropy_plotFum(Temp,p)
+        fun3=@(T)CpFumee(T,Y,X,lambda)./T;
+        fun4=@(p)constanteRfumee(Y,X,lambda)./p;
+        
+        entrop=integral(fun3,T0,Temp) - integral(fun4,p0,p);
+    end
+
+    end
