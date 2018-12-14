@@ -323,17 +323,17 @@ for c=ind_tmax+1:length(T_HS)
 end
 
 
-% figure()
-% hold on;
-% plot(S_plot,T_HS);
-% for i=1:17
-% plot_TS(i);
-% end
+figure()
+hold on;
+plot(S_plot,T_HS);
+for i=1:17
+plot_TS(i);
+end
 
 figure()
 hold on;
 plot(S_plot,H_HS);
-for i=1:1
+for i=1:17
 plot_HS(i);
 end
   
@@ -375,8 +375,6 @@ end
   systemMassFlow(2,1)= -MFumee*(h_HPg-h_IPg)+MassflowIterInitiale(1)*(Enthalpies(14)-Enthalpies(12))+MassflowIterInitiale(2)*(Enthalpies(11)-Enthalpies(12))+MassflowIterInitiale(3)*(Enthalpies(6)-Enthalpies(8));
   systemMassFlow(3,1)= -MFumee*(h_IPg-h_LPg)+MassflowIterInitiale(1)*(Enthalpies(12)-Enthalpies(9))+MassflowIterInitiale(2)*(Enthalpies(12)-Enthalpies(9))+MassflowIterInitiale(3)*(Enthalpies(8)-Enthalpies(9));
   end
-
-
 
   function [t2,h2,s2,x2,e2] = compression(eta_SiC,p2,h1,s1)
        % Adiabatic compression
@@ -780,6 +778,26 @@ end
                 end
                 h(end)=H4;
                 plot(s,h,'k','HandleVisibility','off');
+             case 16 %2-7    
+                p=linspace(P2,P7,n_pt);
+                s=linspace(S2,S7,n_pt);
+                h=zeros(size(s));
+                h(1)=H2;
+                for k=2:n_pt-1
+                    h(k)=XSteam('h_ps',p(k),s(k));
+                end
+                h(end)=H7;
+                plot(s,h,'k','HandleVisibility','off');
+            case 17 %4-5   
+                p=linspace(P4,P5,n_pt);
+                s=linspace(S4,S5,n_pt);
+                h=zeros(size(s));
+                h(1)=H4;
+                for k=2:n_pt-1
+                    h(k)=XSteam('h_ps',p(k),s(k));
+                end
+                h(end)=H5;
+                plot(s,h,'k','HandleVisibility','off');  
         end
     end
                 

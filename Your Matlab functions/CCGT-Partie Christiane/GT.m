@@ -87,17 +87,18 @@ if nargin<3
        if nargin<1
            P_e=100;%100MW
        end
-      %%%%DESCRIPION DE LA STRUCTURE%%%%%
-      options = struct;
-      options.k_mec=0.015;
-      options.T_0=15;
-      options.T_ext=15; 
-      options.r=18;   
-      options.k_cc=0.95;  
-      options.T_3=1400;   
-      options.eta_PiC=0.9; 
-      options.eta_PiT=0.9;
+%       %%%%DESCRIPION DE LA STRUCTURE%%%%%
+%       options = struct;
+%       options.k_mec=0.015;
+%       options.T_0=15;
+%       options.T_ext=15; 
+%       options.r=18;   
+%       options.k_cc=0.95;  
+%       options.T_3=1400;   
+%       options.eta_PiC=0.9; 
+%       options.eta_PiT=0.9;
 %       options.NTU=4;
+%       options.ER=0;
    end
 end
 
@@ -173,7 +174,10 @@ end
     %Rendement energetique et exergetique
     ea=exergie(2);
     ecr=cpMoyenComb*((options.T_ext+T0)-T1)-cpMoyenComb*T1*log((options.T_ext+T0)/T1);
+    if options.ER==1
     er=ea*((lambda*pouvoirComburivor)/(lambda*pouvoirComburivor+1))+ecr*(1/(lambda*pouvoirComburivor+1));
+    else er=0;
+    end
     eta_totEn = rdtTotalEnergetique(Pe,MFcomb,PCI);
     eta_cyclEn = rdtCyclEnergetique(MFair,Pm,enthalpieVector,MFfumee);
     eta_cyclEx = rdtCyclExergetique(Pm,exergieVector,MFair,MFfumee);
@@ -197,18 +201,20 @@ end
     COMBUSTION.Cp_g=cpFumeeAt400K;
     COMBUSTION.fum=MFComposition;
     
-%     %%%% CALCUL ECHANGEUR DE CHALEUR %%%%
-%     %Calcul de T2R en fonction du NTU
-%     %options.NTU=4;
-%     T2R=(TemperatureEtats(4)*options.NTU+TemperatureEtats(2))/(1+options.NTU);
-%     t2R=T2R-273.15;
-%     %Calcul de T5 en fonction d'un bilan d'energie
-%     fun000=@calculTemperatureT5;
-%     x000=85;%[K]
-%     T5 = fsolve(@(x)fun000(x),x000);
-%     deltaPinchT4_T2R=TemperatureEtats(4)-T2R; %[K] deltaPinchT4_T2R < deltaT5_T2
-%     deltaT5_T2=T5-TemperatureEtats(2);%[K] 
-%     eta_EchangeurCyclenGT = eta_ExchangeCyclenGT();
+    %%%% CALCUL ECHANGEUR DE CHALEUR %%%%
+    %Calcul de T2R en fonction du NTU
+    %options.NTU=4;
+    if options.NTU~=0
+    T2R=(TemperatureEtats(4)*options.NTU+TemperatureEtats(2))/(1+options.NTU);
+    t2R=T2R-273.15;
+    %Calcul de T5 en fonction d'un bilan d'energie
+    fun000=@calculTemperatureT5;
+    x000=85;%[K]
+    T5 = fsolve(@(x)fun000(x),x000);
+    deltaPinchT4_T2R=TemperatureEtats(4)-T2R; %[K] deltaPinchT4_T2R < deltaT5_T2
+    deltaT5_T2=T5-TemperatureEtats(2);%[K] 
+    eta_EchangeurCyclenGT = eta_ExchangeCyclenGT();
+    end
     
     %%%% PLOTS %%%%%
     %Pie chart
@@ -485,7 +491,7 @@ end
     %%%%PARTIE Echangeur de chaleur%%%%
     
     function calculT5 = calculTemperatureT5(x)
-    calculT5=MFair*cpMoyenAir(TemperatureEtats(2),T2R)*(T2R-TemperatureEtats(2))-MFfumee*cpMoyenFumee(TemperatureEtats(4),x,Y,X,lambda)*(TemperatureEtats(4)-x);
+        calculT5=MFair*cpMoyenAir(TemperatureEtats(2),T2R)*(T2R-TemperatureEtats(2))-MFfumee*cpMoyenFumee(TemperatureEtats(4),x,Y,X,lambda)*(TemperatureEtats(4)-x);
     end
 
     function eta_EchangeurCyclenGT = eta_ExchangeCyclenGT()
