@@ -210,15 +210,8 @@ deltaT5_T2=T5-TemperatureEtats(2)%[K]
 eta_EchangeurCyclenGT = eta_ExchangeCyclenGT()
 
 %%%% PLOTS %%%%%
-
-if display ==1
-    disp='on';
-else
-    disp='off';
-end
-
 %T-S
-FIG(1)=figure('visible',disp);
+FIG(1)=figure;
 hold on
 leg{1}='';
 for c=1:4
@@ -227,7 +220,7 @@ for c=1:4
 end
 legend(leg)
 
-optimoptions(@lsqnonlin,'display','off'); % Masque les messages de lsqnonlin
+optimoptions(@lsqnonlin,'display','off'); % Masque les me
 for k=1:1
     plot_TS(k)
 end
@@ -530,8 +523,7 @@ pie(data,labels);
 
 
     function plot_TS(ind)
-        n_pt=50;
-        optis = optimset('Display','off');
+        n_pt=100;
         switch ind
             case 1 % Line 1-2
                 p=linspace(pressions(1),pressions(2),n_pt);
@@ -541,7 +533,7 @@ pie(data,labels);
                 t(1)=TemperatureEtats(1);
                 x0 = [1.2,295];                
                 for c=2:n_pt-1
-                    NaT = lsqnonlin(@(x) calculNaT12_plot(p(c),x),x0,[0 0],[100 2000],optis); %Determination de na et T
+                    NaT = lsqnonlin(@(x) calculNaT12_plot(p(c),x),x0); %Determination de na et T
                     t(c)=NaT(2);
                     x0 = NaT;
                     S(c)=entropy_plot12(t(c),p(c));
@@ -550,7 +542,7 @@ pie(data,labels);
                 S(end)=entrop(2);
                 plot(S,t,'r','HandleVisibility','off');
             case 2 % Line 2-3
-                p=linspace(pressions(2),pressions(3),n_pt); % On suposse une chute de pression lineaire à l'entropie
+                p=linspace(p2,p3,n_pt);
                 s=linspace(s2,s3,n_pt);
                 t=zeros(size(s));
                 t(1)=t2;
@@ -574,7 +566,7 @@ pie(data,labels);
                 t(end)=t4;
                 s(end)=s4;
                 plot(s,t,'k','HandleVisibility','off');
-            case 4 % Line 4-1
+            case 4 % Line 4-5
                 if options.reheat==1
                     p=linspace(p4,p5,n_pt);
                     s=linspace(s4,s5,n_pt);

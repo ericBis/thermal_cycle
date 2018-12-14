@@ -111,7 +111,7 @@ if nargin<3
         options.nsout=8; %   [-] : Number of feed-heating %%
         options.reheat=1; %    [-] : Number of reheating %%
         options.T_max=565; %     [°C] : Maximum steam temperature %%
-        options.T_cond_out=24; %[°C] : Condenseur cold outlet temperature %%
+        options.T_cond_out=29; %[°C] : Condenseur cold outlet temperature %%
         options.p3_hp=310; %     [bar] : Maximum pressure  %%
         options.drumFlag=1; %   [-] : if =1 then drum if =0 => no drum.  %%
         options.eta_mec=0.99; %    [-] : mecanic efficiency of shafts bearings %%
@@ -127,7 +127,7 @@ if nargin<3
         options.T_0=15; %        [°C] : Reference temperature %%
         options.TpinchSub=4; %  [°C] : Temperature pinch at the subcooler %%
         options.TpinchEx=10; %   [°C] : Temperature pinch at a heat exchanger %%
-        options.TpinchCond=8; % [°C] : Temperature pinch at condenser %%
+        options.TpinchCond=6; % [°C] : Temperature pinch at condenser %%
         options.Tdrum=148.7; %      [°C] : minimal drum temperature  %%
         options.eta_SiC=0.85; %     [-] : Isotrenpic efficiency for compression %%
         options.eta_SiT=[0.89 0.89]; %     [-] : Isotrenpic efficiency for Turbine. It can be a vector of 2 values :
@@ -207,7 +207,7 @@ if (~isfield(options,'p_3') && isfield(options,'x4'))
     options.p_3=detente(eta_SiT(1),options.TpinchCond+options.T_cond_out,...
         options.x4,options.T_max); % [bar]
 else
-    options.p_3=0.2*options.p3_hp;
+    options.p_3=0.49*options.p3_hp;
 end
 
 if ~isfield(options,'x4')
