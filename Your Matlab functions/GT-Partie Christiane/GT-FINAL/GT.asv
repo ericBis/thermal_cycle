@@ -85,7 +85,7 @@ if nargin<3
     if nargin<2
         options = struct();
         if nargin<1
-            P_e=100;%100MW
+            P_e=230e3;%100MW
         end
         %%%%%DESCRIPION DE LA STRUCTURE%%%%%
         options = struct;
@@ -212,6 +212,8 @@ T5 = fsolve(@(x)fun000(x),x000);
 deltaPinchT4_T2R=TemperatureEtats(4)-T2R%[K] deltaPinchT4_T2R < deltaT5_T2
 deltaT5_T2=T5-TemperatureEtats(2)%[K]
 eta_EchangeurCyclenGT = eta_ExchangeCyclenGT()
+S5=entropy_plotFum(T5,pressions(4));
+H5=cpMoyenFumee(T0,T5,Y,X,lambda)*(T5-T0);
 
 %%%% PLOTS %%%%%
 if options.GraphCompute==1
@@ -245,6 +247,7 @@ if options.GraphCompute==1
         plot(entrop(k),TemperatureEtats(k),'*')
         leg{k}=['Etat ' num2str(k)];
     end
+    if
     legend(leg)
     plot(s,t,'k','HandleVisibility','off');
     
@@ -265,16 +268,21 @@ if options.GraphCompute==1
     %Pie Charts
     
     FIG(3)=figure('visible',disp);
-    pie([P_e ; DATEN],{sprintf('%s \n %.1f [MW]','Effective power',P_e*1e-3),...
-        sprintf('%s \n %.1f [MW]','Generator losses',DATEN(1)*1e-3),...
-        sprintf('%s \n %.1f [MW]','Mechanical losses',DATEN(2)*1e-3),...
-        sprintf('%s \  n %.1f [MW]','Condensor loss',DATEN(3)*1e-3)});
-    title(sprintf('Steam Turbine Energy pie chart \n Primary power :  %.1f [MW]',mc*LHV*1e-3));
+    pie([P_e, DATEN],{sprintf('%s \n %.1f [MW]','Effective power',P_e*1e-3),...
+        sprintf('%s \n %.1f [MW]','Mechanical losses',DATEN(1)*1e-3),...
+        sprintf('%s \n %.1f [MW]','Exhaust loss',DATEN(2)*1e-3)});
+    title(sprintf('Gas Turbine Energy pie chart \n Primary power :  %.1f [MW]',...
+        MFcomb*COMBUSTION.LHV*1e-3));
     
-    data = [Pfm,Protex,Pcomb,PexhExerg];
-    labels = {strcat('Mechanical losses:',num2str(data(1)),'MW'),strcat('Mechanical exergetic power:',num2str(data(2)),'MW'),strcat('Primary exergy input:',num2str(data(3)),'MW'),strcat('Exhaust exergy losses:',num2str(data(4)),'MW')};
-    pie(data,labels);
-    
+    FIG(4)=figure('visible',disp);
+    pie([P_e, DATEX],{sprintf('%s \n %.1f [MW]','Effective power',P_e*1e-3),...
+        sprintf('%s \n %.1f [MW]','Mechanical losses',DATEX(1)*1e-3),...
+        sprintf('%s \n %.1f [MW]','Turbine & compressor irreversibilities',DATEX(2)*1e-3),...
+        sprintf('%s \n %.1f [MW]','Combustion irreversibility',DATEX(3)*1e-3)...
+        sprintf('%s \n %.1f [MW]','Exhaust loss',DATEX(4)*1e-3)});
+    title(sprintf('Gas Turbine Exergy pie chart \n Primary exergy flux :  %.1f [MW]',...
+        MFcomb*COMBUSTION.e_c*1e-3));
+   
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%ALL FUNCTIONS OF GT%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -627,22 +635,49 @@ end
                 S(end)=entrop(4);
                 H(end)=enth(4);
                 %   plot(S,t,'k','HandleVisibility','off');
-            case 4 % Line 4-1
-                p=linspace(pressions(4),pressions(1),n_pt); % On suposse une chute de pression lineaire l'augmentation de temperature
-                t=linspace(TemperatureEtats(4),TemperatureEtats(1),n_pt);
-                S=zeros(size(p));
-                H=zeros(size(p));
-                S(1)=entrop(4);
-                t(1)=TemperatureEtats(4);
-                H(1)=enth(4);
-                for c=2:n_pt-1
-                    S(c)=entropy_plotFum(t(c),p(c));
-                    H(c)=cpMoyenFumee(T0,t(c),Y,X,lambda)*(t(c)-T0);
+            case 4 % Line 4-1 or 4-5
+                if options.NTU~=0 % Heat Exchanger
+                    p=linspace(pressions(4),pressions(4),n_pt); % On suppose l'échange de chaleur isobare 
+                    t=linspace(TemperatureEtats(4),T5,n_pt);
+                    S=zeros(size(p));
+                    H=zeros(size(p));
+                    S(1)=entrop(4);
+                    t(1)=TemperatureEtats(4);
+                    H(1)=enth(4);
+                    for c=2:n_pt
+                        S(c)=entropy_plotFum(t(c),p(c));
+                        H(c)=cpMoyenFumee(T0,t(c),Y,X,lambda)*(t(c)-T0);
+                    end
+                else % No heat exchanger
+                    p=linspace(pressions(4),pressions(1),n_pt); % On suposse une chute de pression lineaire l'augmentation de temperature
+                    t=linspace(TemperatureEtats(4),TemperatureEtats(1),n_pt);
+                    S=zeros(size(p));
+                    H=zeros(size(p));
+                    S(1)=entrop(4);
+                    t(1)=TemperatureEtats(4);
+                    H(1)=enth(4);
+                    for c=2:n_pt-1
+                        S(c)=entropy_plotFum(t(c),p(c));
+                        H(c)=cpMoyenFumee(T0,t(c),Y,X,lambda)*(t(c)-T0);
+                    end
+                    t(end)=TemperatureEtats(1);
+                    S(end)=entrop(1);
+                    H(end)=enth(1);
                 end
-                t(end)=TemperatureEtats(1);
-                S(end)=entrop(1);
-                H(end)=enth(1);
-                %   plot(S,t,'k','HandleVisibility','off');
+            case 5 % Line 5-1
+                if options.NTU==1
+                    p=linspace(pressions(4),pressions(1),n_pt); % On suppose l'échange de chaleur isobare
+                    t=linspace(T5,TemperatureEtats(1),n_pt);
+                    S=zeros(size(p));
+                    H=zeros(size(p));
+                    S(1)=S5;
+                    t(1)=T5;
+                    H(1)=H5;
+                    for c=2:n_pt
+                        S(c)=entropy_plotFum(t(c),p(c));
+                        H(c)=cpMoyenFumee(T0,t(c),Y,X,lambda)*(t(c)-T0);
+                    end                    
+                end
         end
     end
 

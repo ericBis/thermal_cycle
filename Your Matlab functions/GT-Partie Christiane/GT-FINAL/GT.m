@@ -212,6 +212,8 @@ T5 = fsolve(@(x)fun000(x),x000);
 deltaPinchT4_T2R=TemperatureEtats(4)-T2R%[K] deltaPinchT4_T2R < deltaT5_T2
 deltaT5_T2=T5-TemperatureEtats(2)%[K]
 eta_EchangeurCyclenGT = eta_ExchangeCyclenGT()
+S5=entropy_plotFum(T5,pressions(4));
+H5=cpMoyenFumee(T0,T5,Y,X,lambda)*(T5-T0);
 
 %%%% PLOTS %%%%%
 if options.GraphCompute==1
@@ -222,14 +224,20 @@ if options.GraphCompute==1
         disp='off';
     end
     
+    if options.NTU~=0
+        n_points=5;
+    else
+        n_points=4;
+    end
+    
     FIG = gobjects(4,1);
     n_pt=30;
-    t=zeros(4*n_pt,1);
-    s=zeros(4*n_pt,1);
-    h=zeros(4*n_pt,1);
+    t=zeros(n_points*n_pt,1);
+    s=zeros(n_points*n_pt,1);
+    h=zeros(n_points*n_pt,1);
     kn=1;
     
-    for k=1:4
+    for k=1:n_points
         [t(kn:kn+n_pt-1),s(kn:kn+n_pt-1),h(kn:kn+n_pt-1)]=plot_TS_TH(k,n_pt);
         kn=kn+n_pt;
     end
@@ -239,11 +247,15 @@ if options.GraphCompute==1
     hold on
     title('Gas turbine T-s diagram');
     ylabel('Temperature [°C]');
-    xlabel('Entropy [kJ/kg.K]');
+    xlabel('Entropy [kJ/kg/K]');
     leg{1}='';
     for k=1:4
         plot(entrop(k),TemperatureEtats(k),'*')
         leg{k}=['Etat ' num2str(k)];
+    end
+    if options.NTU~=0
+        plot(S5,T5,'*')
+        leg{5}=['Etat ' num2str(5)];
     end
     legend(leg)
     plot(s,t,'k','HandleVisibility','off');
@@ -252,12 +264,13 @@ if options.GraphCompute==1
     FIG(2)=figure('visible',disp);
     hold on
     title('Gas turbine h-s diagram');
-    ylabel('Enthalpie [°C]');
-    xlabel('Entropy [kJ/kg.K]');
-    leg{1}='';
+    ylabel('Enthalpie [kJ/kg]');
+    xlabel('Entropy [kJ/kg/K]');
     for k=1:4
         plot(entrop(k),enth(k),'*')
-        leg{k}=['Etat ' num2str(k)];
+    end  
+    if options.NTU~=0
+        plot(S5,H5,'*')
     end
     legend(leg)
     plot(s,h,'k','HandleVisibility','off');
@@ -632,22 +645,49 @@ end
                 S(end)=entrop(4);
                 H(end)=enth(4);
                 %   plot(S,t,'k','HandleVisibility','off');
-            case 4 % Line 4-1
-                p=linspace(pressions(4),pressions(1),n_pt); % On suposse une chute de pression lineaire l'augmentation de temperature
-                t=linspace(TemperatureEtats(4),TemperatureEtats(1),n_pt);
-                S=zeros(size(p));
-                H=zeros(size(p));
-                S(1)=entrop(4);
-                t(1)=TemperatureEtats(4);
-                H(1)=enth(4);
-                for c=2:n_pt-1
-                    S(c)=entropy_plotFum(t(c),p(c));
-                    H(c)=cpMoyenFumee(T0,t(c),Y,X,lambda)*(t(c)-T0);
+            case 4 % Line 4-1 or 4-5
+                if options.NTU~=0 % Heat Exchanger
+                    p=linspace(pressions(4),pressions(4),n_pt); % On suppose l'échange de chaleur isobare 
+                    t=linspace(TemperatureEtats(4),T5,n_pt);
+                    S=zeros(size(p));
+                    H=zeros(size(p));
+                    S(1)=entrop(4);
+                    t(1)=TemperatureEtats(4);
+                    H(1)=enth(4);
+                    for c=2:n_pt
+                        S(c)=entropy_plotFum(t(c),p(c));
+                        H(c)=cpMoyenFumee(T0,t(c),Y,X,lambda)*(t(c)-T0);
+                    end
+                else % No heat exchanger
+                    p=linspace(pressions(4),pressions(1),n_pt); % On suposse une chute de pression lineaire l'augmentation de temperature
+                    t=linspace(TemperatureEtats(4),TemperatureEtats(1),n_pt);
+                    S=zeros(size(p));
+                    H=zeros(size(p));
+                    S(1)=entrop(4);
+                    t(1)=TemperatureEtats(4);
+                    H(1)=enth(4);
+                    for c=2:n_pt-1
+                        S(c)=entropy_plotFum(t(c),p(c));
+                        H(c)=cpMoyenFumee(T0,t(c),Y,X,lambda)*(t(c)-T0);
+                    end
+                    t(end)=TemperatureEtats(1);
+                    S(end)=entrop(1);
+                    H(end)=enth(1);
                 end
-                t(end)=TemperatureEtats(1);
-                S(end)=entrop(1);
-                H(end)=enth(1);
-                %   plot(S,t,'k','HandleVisibility','off');
+            case 5 % Line 5-1
+                if options.NTU~=0
+                    p=linspace(pressions(4),pressions(1),n_pt); % On suppose l'échange de chaleur isobare
+                    t=linspace(T5,TemperatureEtats(1),n_pt);
+                    S=zeros(size(p));
+                    H=zeros(size(p));
+                    S(1)=S5;
+                    t(1)=T5;
+                    H(1)=H5;
+                    for c=2:n_pt
+                        S(c)=entropy_plotFum(t(c),p(c));
+                        H(c)=cpMoyenFumee(T0,t(c),Y,X,lambda)*(t(c)-T0);
+                    end                    
+                end
         end
     end
 
