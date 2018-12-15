@@ -270,7 +270,7 @@ end
     T3=273.15+options.T_3;
     eqq=ones(2,1);
     eqq(1,1)=log(x(1)/T3) - (eta_PiT*constanteRfumee(Y,X,x(2))/cpMoyenFumee(x(1),T3,Y,X,x(2)))*log(1/(k_cc*r));
-    eqq(2,1)=(T3-T0)-((1-0.01)*PouvoirCalorifiqueInf(Y,X)+x(2)*pouvoirComburivore(Y,X)*cpMoyenAir(T0,T2)*(T2-T0)+cpMoyenComb*(Tcomb-T0))/(((pouvoirComburivore(Y,X))*x(2)+1)*cpMoyenFumee(T0,T3,Y,X,x(2)));
+    eqq(2,1)=(T3-T0)-((1)*PouvoirCalorifiqueInf(Y,X)+x(2)*pouvoirComburivore(Y,X)*cpMoyenAir(T0,T2)*(T2-T0)+cpMoyenComb*(Tcomb-T0))/(((pouvoirComburivore(Y,X))*x(2)+1)*cpMoyenFumee(T0,T3,Y,X,x(2)));
     end
 
     function cpMFumee = cpMoyenFumee(Ta,Tb,Y,X,lambda)%Valable pour les etats 2,3,4 et tient compte de la compostition de l'air
