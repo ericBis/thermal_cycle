@@ -75,19 +75,19 @@ if ~isfield(options,'Triver')
 end
 
 if ~isfield(options,'Ta_in')
-    options.Ta_in=15; % [°C]
+    options.Ta_in=20; % [°C]
 end
 
 if ~isfield(options,'Ta_out')
-    options.Ta_out=15; % [°C]
+    options.Ta_out=30; % [°C]
 end
 
 if ~isfield(options,'Phi_atm')
-    options.Phi_atm=0.6;
+    options.Phi_atm=0.4;
 end
 
 if ~isfield(options,'Phi_out')
-    options.Phi_out=0.99; 
+    options.Phi_out=0.95; 
 end
 
 %Tcond=options.Tcond;
@@ -98,7 +98,6 @@ Ta_in=options.Ta_in;
 Ta_out=options.Ta_out;
 Phi_atm=options.Phi_atm;
 Phi_out=options.Phi_out;
-%p_atm=1.01325; % [bar] pressure of the atmosphere
 
 % Air caractéristics
 [~, xa_in, ~, ha_in, ~, ~, ~] = Psychrometrics('Tdb',Ta_in,'phi',Phi_atm*100);
@@ -123,8 +122,9 @@ me4=m_evap;
 me1=me3-m_evap;
 
 %water state 1 caracteristics
+p_atm=1.01325; % [bar] pressure of the atmosphere
 he1=(me2*he2-me4*he4)/me1;
-te1=XSteam('T_ph',1,he1);
+te1=XSteam('T_ph',p_atm,he1);
 
 % Outputs
 DAT_AIR = [Ta_in Ta_out ; ha_in ha_out ; xa_in xa_out ; Phi_atm Phi_out];

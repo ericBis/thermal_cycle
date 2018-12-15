@@ -146,7 +146,7 @@ else
 end
 
 if ~isfield(options,'drumFlag')
-    options.drumFlag=1;
+    options.drumFlag=0;
 end
 
 if ~isfield(options,'eta_mec')
@@ -154,7 +154,7 @@ if ~isfield(options,'eta_mec')
 end
 
 if ~isfield(options,'nsout')
-    options.nsout=8;
+    options.nsout=0;
 end
 
 if ~isfield(options,'reheat')
@@ -735,8 +735,6 @@ end
         Xbled=x(2:end);
         else
             Xbled=0;
-            hsc=0;
-            esc=0;
         end
 
     end
@@ -856,11 +854,7 @@ end
         
         % Normalisation of Wm with regard to the point 7
         %Hp Turbine and start of the IP
-        if options.nsout > 0
         Wm=X3*(h3-h4)+ X5*(h5-h6(end-1));
-        else
-           Wm=X3*(h3-h4)+ X5*(h5-h6)
-        end
         tmp_deb=X5;
         d_h=(h6(2:end)-h6(1:end-1))'; % enthalpie differences
         if drumFlag ==1
