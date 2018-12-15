@@ -1,4 +1,4 @@
-function [DAT_WATER DAT_AIR MASSFLOW] = CoolingTower(P_w,options)
+function [DAT_WATER, DAT_AIR, MASSFLOW] = CoolingTower(P_w,options)
 % COOLINGTOWER is a cooling tower 0D modelisation
 % COOLINGTOWER(P_w,options) compute the thermodynamics states for a Cooling
 % tower based on several inputs (given in OPTION) and based on a given 
@@ -62,8 +62,35 @@ else
     Tpinch = 4; %[K]
 end
 
-Tcond=options.Tcond;
-Tpinch=options.Tpinch;
+if ~isfield(options,'Tw_out')
+    options.Tw_out=60; % [°C]
+end
+
+if ~isfield(options,'Tw_in')
+    options.Tw_in=30; % [°C]
+end
+
+if ~isfield(options,'Triver')
+    options.Triver=15; % [°C]
+end
+
+if ~isfield(options,'Ta_in')
+    options.Ta_in=15; % [°C]
+end
+
+if ~isfield(options,'Ta_out')
+    options.Ta_out=15; % [°C]
+end
+
+if ~isfield(options,'Phi_atm')
+    options.Phi_atm=0.6;
+end
+
+if ~isfield(options,'Phi_out')
+    options.Phi_out=0.99; 
+end
+
+%Tcond=options.Tcond;
 Tw_out=options.Tw_out;
 Tw_in=options.Tw_in;
 Triver=options.Triver;
@@ -71,7 +98,7 @@ Ta_in=options.Ta_in;
 Ta_out=options.Ta_out;
 Phi_atm=options.Phi_atm;
 Phi_out=options.Phi_out;
-p_atm=1.01325; % [bar] pressure of the atmosphere
+%p_atm=1.01325; % [bar] pressure of the atmosphere
 
 % Air caractéristics
 [~, xa_in, ~, ha_in, ~, ~, ~] = Psychrometrics('Tdb',Ta_in,'phi',Phi_atm*100);

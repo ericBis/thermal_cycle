@@ -108,31 +108,31 @@ if nargin<3
         if nargin<1
             P_e = 288e3; % [kW] Puissance énergétique de l'installation
         end
-        options.nsout=8; %   [-] : Number of feed-heating %%
-        options.reheat=1; %    [-] : Number of reheating %%
-        options.T_max=565; %     [°C] : Maximum steam temperature %%
-        options.T_cond_out=24; %[°C] : Condenseur cold outlet temperature %%
-        options.p3_hp=310; %     [bar] : Maximum pressure  %%
-        options.drumFlag=1; %   [-] : if =1 then drum if =0 => no drum.  %%
-        options.eta_mec=0.99; %    [-] : mecanic efficiency of shafts bearings %%
-        % options.comb is a structure containing combustion data :
-        options.comb=struct;
-        options.comb.Tmax=1050; %      [°C] : maximum combustion temperature
-        %options.comb.lambda=0; %    [-] : air excess
-        options.comb.x=0; %         [-] : the ratio O_x/C. Example 0.05 in CH_1.2O_0.05
-        options.comb.y=4; %         [-] : the ratio H_y/C. Example 1.2 in CH_1.2O_0.05
-        options.T_exhaust=0; %  [°C] : Temperature of exhaust gas out of the chimney %%
-        options.p_3=62; %        [-] : High pressure after last reheating  %%
-        options.x4=0.99; %         [-] : Vapor ratio [gaseous/liquid] (in french : titre) %%
-        options.T_0=15; %        [°C] : Reference temperature %%
-        options.TpinchSub=4; %  [°C] : Temperature pinch at the subcooler %%
-        options.TpinchEx=10; %   [°C] : Temperature pinch at a heat exchanger %%
-        options.TpinchCond=8; % [°C] : Temperature pinch at condenser %%
-        options.Tdrum=148.7; %      [°C] : minimal drum temperature  %%
-        options.eta_SiC=0.85; %     [-] : Isotrenpic efficiency for compression %%
-        options.eta_SiT=[0.89 0.89]; %     [-] : Isotrenpic efficiency for Turbine. It can be a vector of 2 values :
-        %             	             eta_SiT(1)=eta_SiT_HP,eta_SiT(2)=eta_SiT_others
-        %             	             %%
+%         options.nsout=8; %   [-] : Number of feed-heating %%
+%         options.reheat=1; %    [-] : Number of reheating %%
+%         options.T_max=565; %     [°C] : Maximum steam temperature %%
+%         options.T_cond_out=24; %[°C] : Condenseur cold outlet temperature %%
+%         options.p3_hp=310; %     [bar] : Maximum pressure  %%
+%         options.drumFlag=1; %   [-] : if =1 then drum if =0 => no drum.  %%
+%         options.eta_mec=0.99; %    [-] : mecanic efficiency of shafts bearings %%
+%         % options.comb is a structure containing combustion data :
+%         options.comb=struct;
+%         options.comb.Tmax=1050; %      [°C] : maximum combustion temperature
+%         %options.comb.lambda=0; %    [-] : air excess
+%         options.comb.x=0; %         [-] : the ratio O_x/C. Example 0.05 in CH_1.2O_0.05
+%         options.comb.y=4; %         [-] : the ratio H_y/C. Example 1.2 in CH_1.2O_0.05
+%         options.T_exhaust=0; %  [°C] : Temperature of exhaust gas out of the chimney %%
+%         options.p_3=62; %        [-] : High pressure after last reheating  %%
+%         options.x4=0.99; %         [-] : Vapor ratio [gaseous/liquid] (in french : titre) %%
+%         options.T_0=15; %        [°C] : Reference temperature %%
+%         options.TpinchSub=4; %  [°C] : Temperature pinch at the subcooler %%
+%         options.TpinchEx=10; %   [°C] : Temperature pinch at a heat exchanger %%
+%         options.TpinchCond=8; % [°C] : Temperature pinch at condenser %%
+%         options.Tdrum=148.7; %      [°C] : minimal drum temperature  %%
+%         options.eta_SiC=0.85; %     [-] : Isotrenpic efficiency for compression %%
+%         options.eta_SiT=[0.89 0.89]; %     [-] : Isotrenpic efficiency for Turbine. It can be a vector of 2 values :
+%         %             	             eta_SiT(1)=eta_SiT_HP,eta_SiT(2)=eta_SiT_others
+%         %             	             %%
     end
 end
 

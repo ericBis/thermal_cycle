@@ -1,4 +1,4 @@
-function [ETA, DATEN, DATEX, DAT, MASSFLOW, COMBUSTION] = GT(P_e,options,display)
+function [ETA, DATEN, DATEX, DAT, MASSFLOW, COMBUSTION, FIG] = GT(P_e,options,display)
 % GT Gas turbine modelisation
 % GT(P_e,options,display) compute the thermodynamics states for a Gas
 % turbine based on several inputs (given in OPTION) and based on a given
@@ -85,7 +85,7 @@ if nargin<3
     if nargin<2
         options = struct();
         if nargin<1
-            P_e=100;%100MW
+            P_e=230e3;%100MW
         end
         %%%%%DESCRIPION DE LA STRUCTURE%%%%%
         options = struct;
@@ -110,10 +110,14 @@ else
     T_0 = 15;
 end
 
+if ~isfield(options,'GraphCompute')
+    options.GraphCompute=1;
+end
+
 
 %%%%%%APPEL FONCTION ETAT%%%%%
 T0=273.15;
-T1=273.15+options.T_0;
+T1=273.15+T_0;
 T3=273.15+options.T_3;
 fun0 = @calculNaT2;
 x00 = [1.2,295];
@@ -210,57 +214,73 @@ deltaT5_T2=T5-TemperatureEtats(2)%[K]
 eta_EchangeurCyclenGT = eta_ExchangeCyclenGT()
 
 %%%% PLOTS %%%%%
-
-if display ==1
-    disp='on';
-else
-    disp='off';
+if options.GraphCompute==1
+    
+    if display ==1
+        disp='on';
+    else
+        disp='off';
+    end
+    
+    FIG = gobjects(4,1);
+    n_pt=30;
+    t=zeros(4*n_pt,1);
+    s=zeros(4*n_pt,1);
+    h=zeros(4*n_pt,1);
+    kn=1;
+    
+    for k=1:4
+        [t(kn:kn+n_pt-1),s(kn:kn+n_pt-1),h(kn:kn+n_pt-1)]=plot_TS_TH(k,n_pt);
+        kn=kn+n_pt;
+    end
+    
+    %T-S
+    FIG(1)=figure('visible',disp);
+    hold on
+    title('Gas turbine T-s diagram');
+    ylabel('Temperature [°C]');
+    xlabel('Entropy [kJ/kg.K]');
+    leg{1}='';
+    for k=1:4
+        plot(entrop(k),TemperatureEtats(k),'*')
+        leg{k}=['Etat ' num2str(k)];
+    end
+    legend(leg)
+    plot(s,t,'k','HandleVisibility','off');
+    
+    %H-S
+    FIG(2)=figure('visible',disp);
+    hold on
+    title('Gas turbine h-s diagram');
+    ylabel('Enthalpie [°C]');
+    xlabel('Entropy [kJ/kg.K]');
+    leg{1}='';
+    for k=1:4
+        plot(entrop(k),enth(k),'*')
+        leg{k}=['Etat ' num2str(k)];
+    end
+    legend(leg)
+    plot(s,h,'k','HandleVisibility','off');
+    
+    %Pie Charts
+    
+    FIG(3)=figure('visible',disp);
+    pie([P_e, DATEN],{sprintf('%s \n %.1f [MW]','Effective power',P_e*1e-3),...
+        sprintf('%s \n %.1f [MW]','Mechanical losses',DATEN(1)*1e-3),...
+        sprintf('%s \n %.1f [MW]','Exhaust loss',DATEN(2)*1e-3)});
+    title(sprintf('Gas Turbine Energy pie chart \n Primary power :  %.1f [MW]',...
+        MFcomb*COMBUSTION.LHV*1e-3));
+    
+    FIG(4)=figure('visible',disp);
+    pie([P_e, DATEX],{sprintf('%s \n %.1f [MW]','Effective power',P_e*1e-3),...
+        sprintf('%s \n %.1f [MW]','Mechanical losses',DATEX(1)*1e-3),...
+        sprintf('%s \n %.1f [MW]','Turbine & compressor irreversibilities',DATEX(2)*1e-3),...
+        sprintf('%s \n %.1f [MW]','Combustion irreversibility',DATEX(3)*1e-3)...
+        sprintf('%s \n %.1f [MW]','Exhaust loss',DATEX(4)*1e-3)});
+    title(sprintf('Gas Turbine Exergy pie chart \n Primary exergy flux :  %.1f [MW]',...
+        MFcomb*COMBUSTION.e_c*1e-3));
+   
 end
-
-FIG = gobjects(4,1);
-n_pt=30;
-t=zeros(4*n_pt,1);
-s=zeros(4*n_pt,1);
-h=zeros(4*n_pt,1);
-kn=1;
-
-for k=1:4
-    [t(kn:kn+n_pt-1),s(kn:kn+n_pt-1),h(kn:kn+n_pt-1)]=plot_TS_TH(k,n_pt);
-    kn=kn+n_pt;
-end
-
-%T-S
-FIG(1)=figure('visible',disp);
-hold on
-title('Gas turbine T-s diagram');
-ylabel('Temperature [°C]');
-xlabel('Entropy [kJ/kg.K]');
-leg{1}='';
-for k=1:4
-    plot(entrop(k),TemperatureEtats(k),'*')
-    leg{k}=['Etat ' num2str(k)];
-end
-legend(leg)
-plot(s,t,'k','HandleVisibility','off');
-
-%H-S
-FIG(2)=figure('visible',disp);
-hold on
-title('Gas turbine h-s diagram');
-ylabel('Enthalpie [°C]');
-xlabel('Entropy [kJ/kg.K]');
-leg{1}='';
-for k=1:4
-    plot(entrop(k),enth(k),'*')
-    leg{k}=['Etat ' num2str(k)];
-end
-legend(leg)
-plot(s,h,'k','HandleVisibility','off');
-
-%Pie chart
-% data = [Pfm,Protex,Pcomb,PexhExerg];
-% labels = {strcat('Mechanical losses:',num2str(data(1)),'MW'),strcat('Mechanical exergetic power:',num2str(data(2)),'MW'),strcat('Primary exergy input:',num2str(data(3)),'MW'),strcat('Exhaust exergy losses:',num2str(data(4)),'MW')};
-% pie(data,labels);
 
 %%%%%%%%%%%%%%%%%%%%%%%ALL FUNCTIONS OF GT%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -551,9 +571,6 @@ plot(s,h,'k','HandleVisibility','off');
         eta_EchangeurCyclenGT=numerateur/denominateur;
     end
 
-
-
-
     function [t,S,H]=plot_TS_TH(ind,n_pt)
         optis = optimset('Display','off');
         switch ind
@@ -565,7 +582,7 @@ plot(s,h,'k','HandleVisibility','off');
                 S(1)=entrop(1);
                 t(1)=TemperatureEtats(1);
                 H(1)=enth(1);
-                x0 = [1.2,295];                
+                x0 = [1.2,295];
                 for c=2:n_pt-1
                     NaT = lsqnonlin(@(x) calculNaT12_plot(p(c),x),...
                         x0,[0 0],[100 2000],optis); %Determination de na et T
@@ -577,7 +594,7 @@ plot(s,h,'k','HandleVisibility','off');
                 t(end)=TemperatureEtats(2);
                 S(end)=entrop(2);
                 H(end)=enth(2);
-               % plot(S,t,'k','HandleVisibility','off');
+                % plot(S,t,'k','HandleVisibility','off');
             case 2 % Line 2-3
                 p=linspace(pressions(2),pressions(3),n_pt); % On suposse une chute de pression lineaire l'augmentation de temperature
                 t=linspace(TemperatureEtats(2),TemperatureEtats(3),n_pt);
@@ -586,14 +603,14 @@ plot(s,h,'k','HandleVisibility','off');
                 S(1)=entrop(2);
                 t(1)=TemperatureEtats(2);
                 H(1)=enth(2);
-for c=2:n_pt-1
+                for c=2:n_pt-1
                     S(c)=entropy_plotFum(t(c),p(c));
                     H(c)=cpMoyenFumee(T0,t(c),Y,X,lambda)*(t(c)-T0);
                 end
                 t(end)=TemperatureEtats(3);
                 S(end)=entrop(3);
                 H(end)=enth(3);
-               % plot(S,t,'k','HandleVisibility','off');
+                % plot(S,t,'k','HandleVisibility','off');
             case 3 % Line 3-4
                 p=linspace(pressions(3),pressions(4),n_pt);
                 t=linspace(TemperatureEtats(3),TemperatureEtats(4),n_pt);
@@ -602,7 +619,7 @@ for c=2:n_pt-1
                 S(1)=entrop(3);
                 t(1)=TemperatureEtats(3);
                 H(1)=enth(3);
-                x0 = [700, 1.1];                
+                x0 = [700, 1.1];
                 for c=2:n_pt-1
                     NgT = lsqnonlin(@(x) calculNgT34_plot(p(c),x),x0,...
                         [0 0],[2000 5],optis); %Determination de na et T
@@ -614,7 +631,7 @@ for c=2:n_pt-1
                 t(end)=TemperatureEtats(4);
                 S(end)=entrop(4);
                 H(end)=enth(4);
-             %   plot(S,t,'k','HandleVisibility','off');
+                %   plot(S,t,'k','HandleVisibility','off');
             case 4 % Line 4-1
                 p=linspace(pressions(4),pressions(1),n_pt); % On suposse une chute de pression lineaire l'augmentation de temperature
                 t=linspace(TemperatureEtats(4),TemperatureEtats(1),n_pt);
@@ -630,7 +647,7 @@ for c=2:n_pt-1
                 t(end)=TemperatureEtats(1);
                 S(end)=entrop(1);
                 H(end)=enth(1);
-            %   plot(S,t,'k','HandleVisibility','off');
+                %   plot(S,t,'k','HandleVisibility','off');
         end
     end
 
@@ -671,4 +688,4 @@ for c=2:n_pt-1
         entrop=integral(fun3,T0,Temp) - integral(fun4,p0,p);
     end
 
-    end
+end
