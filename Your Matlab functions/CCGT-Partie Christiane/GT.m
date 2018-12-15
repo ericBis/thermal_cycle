@@ -170,7 +170,7 @@ end
     Pcomb = puissanceCombExerg(MFcomb,exergieComb); %en [MW] EXERGY 
     PexhExerg = puissanceExhaustExerg(exergieVector,MFair,MFfumee); %en [MW]
     PfmecaExerg = Pfm; %en [MW]
-
+    PerteExComb = perteAlaComb (MFumee,exergieVector);
     %Rendement energetique et exergetique
     ea=exergie(2);
     ecr=cpMoyenComb*((options.T_ext+T0)-T1)-cpMoyenComb*T1*log((options.T_ext+T0)/T1);
@@ -189,7 +189,7 @@ end
     %%%%%OUTPUT VARIABLES%%%%%
     ETA=[eta_cyclEn,eta_totEn,eta_cyclEx,eta_totEx,eta_rotEx,eta_combEx];
     DATEN=[Pfm,Pexh]*1000;%en [kW]
-    DATEX=[PfmecaExerg,Protex,Pcomb,PexhExerg]*1000;%en [kW]
+    DATEX=[PfmecaExerg,Protex,PerteExComb,PexhExerg]*1000;%en [kW]
     DAT=matriceEtats;
     MASSFLOW=[MFair,MFcomb,MFfumee];
     COMBUSTION = struct();
@@ -448,6 +448,10 @@ end
     if (X==0)&&(Y==4)
         exergieComb=52215;
     end
+    end
+
+    function PerteExComb = perteAlaComb (MFumee,exergieVector)
+    PerteExComb=MFumee*exergieVector(3);
     end
 
     function Pcomb = puissanceCombExerg(MFcomb,exergieCombustible)%en [MW]
