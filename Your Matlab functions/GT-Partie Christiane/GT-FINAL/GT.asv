@@ -110,6 +110,34 @@ else
     T_0 = 15;
 end
 
+if ~isfield(options,'k_mec')
+    options.k_mec=0.015;
+end
+
+if ~isfield(options,'T_ext')
+    options.T_ext=15;
+end
+
+if ~isfield(options,'r')
+    options.r=18;
+end
+
+if ~isfield(options,'k_cc')
+    options.k_c=0.95;
+end
+
+if ~isfield(options,'T_3')
+    options.T_3=1400;
+end
+
+if ~isfield(options,'eta_PiC')
+    options.eta_PiC=1400;
+end
+
+if ~isfield(options,'T_3')
+    options.T_3=1400;
+end
+
 if ~isfield(options,'GraphCompute')
     options.GraphCompute=1;
 end
@@ -224,14 +252,20 @@ if options.GraphCompute==1
         disp='off';
     end
     
+    if options.NTU~=0
+        n_points=5;
+    else
+        n_points=4;
+    end
+    
     FIG = gobjects(4,1);
     n_pt=30;
-    t=zeros(4*n_pt,1);
-    s=zeros(4*n_pt,1);
-    h=zeros(4*n_pt,1);
+    t=zeros(n_points*n_pt,1);
+    s=zeros(n_points*n_pt,1);
+    h=zeros(n_points*n_pt,1);
     kn=1;
     
-    for k=1:4
+    for k=1:n_points
         [t(kn:kn+n_pt-1),s(kn:kn+n_pt-1),h(kn:kn+n_pt-1)]=plot_TS_TH(k,n_pt);
         kn=kn+n_pt;
     end
@@ -241,13 +275,16 @@ if options.GraphCompute==1
     hold on
     title('Gas turbine T-s diagram');
     ylabel('Temperature [°C]');
-    xlabel('Entropy [kJ/kg.K]');
+    xlabel('Entropy [kJ/kg/K]');
     leg{1}='';
     for k=1:4
         plot(entrop(k),TemperatureEtats(k),'*')
         leg{k}=['Etat ' num2str(k)];
     end
-    if
+    if options.NTU~=0
+        plot(S5,T5,'*')
+        leg{5}=['Etat ' num2str(5)];
+    end
     legend(leg)
     plot(s,t,'k','HandleVisibility','off');
     
@@ -255,12 +292,13 @@ if options.GraphCompute==1
     FIG(2)=figure('visible',disp);
     hold on
     title('Gas turbine h-s diagram');
-    ylabel('Enthalpie [°C]');
-    xlabel('Entropy [kJ/kg.K]');
-    leg{1}='';
+    ylabel('Enthalpie [kJ/kg]');
+    xlabel('Entropy [kJ/kg/K]');
     for k=1:4
         plot(entrop(k),enth(k),'*')
-        leg{k}=['Etat ' num2str(k)];
+    end  
+    if options.NTU~=0
+        plot(S5,H5,'*')
     end
     legend(leg)
     plot(s,h,'k','HandleVisibility','off');
@@ -665,7 +703,7 @@ end
                     H(end)=enth(1);
                 end
             case 5 % Line 5-1
-                if options.NTU==1
+                if options.NTU~=0
                     p=linspace(pressions(4),pressions(1),n_pt); % On suppose l'échange de chaleur isobare
                     t=linspace(T5,TemperatureEtats(1),n_pt);
                     S=zeros(size(p));

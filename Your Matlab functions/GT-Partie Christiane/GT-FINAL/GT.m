@@ -110,6 +110,38 @@ else
     T_0 = 15;
 end
 
+if ~isfield(options,'k_mec')
+    options.k_mec=0.015;
+end
+
+if ~isfield(options,'T_ext')
+    options.T_ext=15;
+end
+
+if ~isfield(options,'r')
+    options.r=18;
+end
+
+if ~isfield(options,'k_cc')
+    options.k_c=0.95;
+end
+
+if ~isfield(options,'T_3')
+    options.T_3=1400;
+end
+
+if ~isfield(options,'eta_PiC')
+    options.eta_PiC=0.9;
+end
+
+if ~isfield(options,'eta_PiT')
+    options.eta_PiT=0.9;
+end
+
+if ~isfield(options,'NTU')
+    options.NTU=4;
+end
+
 if ~isfield(options,'GraphCompute')
     options.GraphCompute=1;
 end

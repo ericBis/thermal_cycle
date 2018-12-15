@@ -187,7 +187,7 @@ else
         options.x=0;
     end
     if ~isfield(options.comb,'y')
-        options.y=4;
+        options.y=0;
     end
 end
 
@@ -425,9 +425,18 @@ DATEX=zeros(7,1);
 ETA=zeros(9,1);
 MASSFLOW=zeros(4,1);
 
+DAT=[ t1 t2 t3 t4 t5 t6 t7' t8 t9' ;...
+    p1 p2 p3 p4 p5 p6 p7' p8 p9' ;...
+    h1 h2 h3 h4 h5 h6 h7' h8 h9' ;...
+    s1 s2 s3 s4 s5 s6 s7' s8 s9' ;...
+    e1 e2 e3 e4 e5 e6 e7' e8 e9' ;...
+    x1 x2 x3 x4 x5 x6 x7' x8 x9'];
 
 % Combustion
 [COMBUSTION,h_fum,ratio_fum,ma1,h_air,TmaxComb] = combustion(options.comb);
+combu=combustion_ST(DAT,m3,XMASSFLOW,nsout,options.reheat,...
+    options.drumFlag,0,options)
+COMBUSTION
 Q_I=m3*(h3-h2)+ m5*(h5-h4); % Combustion heat energy
 h_exh = getEnthalpy('fum',ratio_fum,options.T_max+TpinchEx);
 mc=Q_I/((1+COMBUSTION.lambda*ma1)*(h_fum-h_exh));
@@ -488,8 +497,8 @@ else
 end
 
 MASSFLOW(2)=m2; % water massflow at 2 [kg/s]
-%MASSFLOW(3)=mc; % combustible massflow [kg/s]
-%MASSFLOW(4)=mf; % exhaust gas massflow [kg/s]
+MASSFLOW(3)=mc; % combustible massflow [kg/s]
+MASSFLOW(4)=mf; % exhaust gas massflow [kg/s]
 
 
 DAT=[ t1 t2 t3 t4 t5 t6 t7' t8 t9' ;...
