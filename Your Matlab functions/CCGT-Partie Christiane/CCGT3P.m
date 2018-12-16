@@ -65,28 +65,28 @@ if nargin<3
             P_eg=225e3;%100MW
         end
         %%%%%DESCRIPTION DE LA STRUCTURE%%%%%
-        %   P_eg = 225e3; %[kW]
-        %   options=struct;
-        %   options.T0 =15; %[°C]:Reference temperature
-        %   options.T_ext=15; %[°C]:External temperature
-        %   options.T_STmax=565; %[°C]:maximum temperature on ST cycle
-        %   options.eta_mec=0.96; %[-]:mecanic efficiency of shafts bearings
-        %   options.pdrum=4; %[bar]:Drum pressure
-        %   options.pmid=28; %[bar]:Intermediary pressure level
-        %   options.x7=0.95;
-        %   options.eta_SiC=0.857;
-        %   options.eta_SiT=0.857;
-        %   options.GT=struct;%[struct]
-        %            options.GT.k_mec=0.015;
-        %            options.GT.T_0=15;
-        %            options.GT.T_ext=15;
-        %            options.GT.r=15;
-        %            options.GT.k_cc=0.95;
-        %            options.GT.T_3=1250;
-        %            options.GT.eta_PiC=0.9;
-        %            options.GT.eta_PiT=0.9;
-        %            options.GT.NTU=0;
-        %            options.GT.ER=0;
+%           P_eg = 225e3; %[kW]
+%           options=struct;
+%           options.T0 =15; %[°C]:Reference temperature
+%           options.T_ext=15; %[°C]:External temperature
+%           options.T_STmax=565; %[°C]:maximum temperature on ST cycle
+%           options.eta_mec=0.96; %[-]:mecanic efficiency of shafts bearings
+%           options.pdrum=4; %[bar]:Drum pressure
+%           options.pmid=28; %[bar]:Intermediary pressure level
+%           options.x7=0.95;
+%           options.eta_SiC=0.857;
+%           options.eta_SiT=0.857;
+%           options.GT=struct;%[struct]
+%                    options.GT.k_mec=0.015;
+%                    options.GT.T_0=15;
+%                    options.GT.T_ext=15;
+%                    options.GT.r=15;
+%                    options.GT.k_cc=0.95;
+%                    options.GT.T_3=1250;
+%                    options.GT.eta_PiC=0.9;
+%                    options.GT.eta_PiT=0.9;
+%                    options.GT.NTU=0;
+%                    options.GT.ER=0;
     end
 end
 
@@ -94,6 +94,86 @@ if isfield(options,'T_0')
     T_0 = options.T_0;
 else
     T_0 = 15; % [°C]
+end
+
+if ~isfield(options,'T0')
+    options.T0=15;
+end
+
+if ~isfield(options,'T_ext')
+    options.T_ext=15;
+end
+
+if ~isfield(options,'T_STmax')
+    options.T_STmax=565;
+end
+
+if ~isfield(options,'eta_mec')
+    options.eta_mec=0.96;
+end
+
+if ~isfield(options,'pdrum')
+    options.pdrum=4;
+end
+
+if ~isfield(options,'pmid')
+    options.pmid=28;
+end
+
+if ~isfield(options,'x7')
+    options.x7=0.95;
+end
+
+if ~isfield(options,'eta_SiT')
+    options.eta_SiT=0.857;
+end
+
+if ~isfield(options,'eta_SiC')
+    options.eta_SiC=0.857;
+end
+
+if ~isfield(options,'GT')
+    options.GT=struct;
+end
+
+if ~isfield(options.GT,'k_mec')
+    options.GT.k_mec=0.015;
+end
+
+if ~isfield(options.GT,'T_0')
+    options.GT.T_0=15;
+end
+
+if ~isfield(options.GT,'T_ext')
+    options.GT.T_ext=15;
+end
+
+if ~isfield(options.GT,'r')
+    options.GT.r=15;
+end
+
+if ~isfield(options.GT,'k_cc')
+    options.GT.k_cc=0.95;
+end
+
+if ~isfield(options.GT,'T_3')
+    options.GT.T_3=1250;
+end
+
+if ~isfield(options.GT,'eta_PiC')
+    options.GT.eta_PiC=0.9;
+end
+
+if ~isfield(options.GT,'eta_PiT')
+    options.GT.eta_PiT=0.9;
+end
+
+if ~isfield(options.GT,'NTU')
+    options.GT.NTU=0;
+end
+
+if ~isfield(options.GT,'ER')
+    options.GT.ER=0;
 end
 
 if ~isfield(options,'GraphCompute')
@@ -341,6 +421,9 @@ if options.GraphCompute==1
     FIG(1)=figure('visible',disp);
     hold on;
     plot(S_plot,T_HS);
+    title('CCGT T-s diagram');
+    ylabel('Temperature [°C]');
+    xlabel('Entropy [kJ/kg/K]');
     for i=1:17
         plot_TS(i);
     end
@@ -348,6 +431,9 @@ if options.GraphCompute==1
     FIG(2)=figure('visible',disp);
     hold on;
     plot(S_plot,H_HS);
+    title('CCGT h-s diagram');
+    ylabel('Enthalpy [kJ/kg]');
+    xlabel('Entropy [kJ/kg/K]');
     for i=1:17
         plot_HS(i);
     end
@@ -378,7 +464,7 @@ ETA(6)=(PuissanceEffectiveGT+PuissanceEffectiveST)/(MASSFLOW(5)*COMBUSTION.e_c);
 ETA(7)=(MFumee*(h_4g-h_5g))/(MASSFLOW(5)*COMBUSTION.LHV) ;%eta_gen, Steam generator energy efficiency
 ETA(9)=ETAGT(6);%eta_combex, Combustion exergy efficiency
 ETA(10)=(E_4g-E_5g)/(E_4g) ;%eta_chemex, Chimney exergy efficiency (losses)
-NumerateurEtaTransexSG=(MASSFLOW(1)*(E3-E2))+(MASSFLOW(1)*(E5-E1))+(MASSFLOW(2)*(E5-E2))+(MASSFLOW(3)*(E6-E2));
+NumerateurEtaTransexSG=MASSFLOW(1)*(E3)-(sum(MASSFLOW(1:3)))*E2;
 DenominateurEtaTransexSG=MFumee*(E_4g-E_5g);
 ETA(11)=NumerateurEtaTransexSG/DenominateurEtaTransexSG;%eta_transex, Heat exchanger overall exergy efficiency
 ETA(8)=ETA(10)*ETA(11)* ETA(9); %eta_gex, Steam generator exergy efficiency
