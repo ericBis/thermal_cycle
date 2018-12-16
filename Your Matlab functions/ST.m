@@ -108,31 +108,31 @@ if nargin<3
         if nargin<1
             P_e = 288e3; % [kW] Puissance énergétique de l'installation
         end
-%         options.nsout=8; %   [-] : Number of feed-heating %%
-%         options.reheat=1; %    [-] : Number of reheating %%
-%         options.T_max=565; %     [°C] : Maximum steam temperature %%
-%         options.T_cond_out=24; %[°C] : Condenseur cold outlet temperature %%
-%         options.p3_hp=310; %     [bar] : Maximum pressure  %%
-%         options.drumFlag=1; %   [-] : if =1 then drum if =0 => no drum.  %%
-%         options.eta_mec=0.99; %    [-] : mecanic efficiency of shafts bearings %%
-%         % options.comb is a structure containing combustion data :
-%         options.comb=struct;
-%         options.comb.Tmax=1050; %      [°C] : maximum combustion temperature
-%         %options.comb.lambda=0; %    [-] : air excess
-%         options.comb.x=0; %         [-] : the ratio O_x/C. Example 0.05 in CH_1.2O_0.05
-%         options.comb.y=4; %         [-] : the ratio H_y/C. Example 1.2 in CH_1.2O_0.05
-%         options.T_exhaust=0; %  [°C] : Temperature of exhaust gas out of the chimney %%
-%         options.p_3=62; %        [-] : High pressure after last reheating  %%
-%         options.x4=0.99; %         [-] : Vapor ratio [gaseous/liquid] (in french : titre) %%
-%         options.T_0=15; %        [°C] : Reference temperature %%
-%         options.TpinchSub=4; %  [°C] : Temperature pinch at the subcooler %%
-%         options.TpinchEx=10; %   [°C] : Temperature pinch at a heat exchanger %%
-%         options.TpinchCond=8; % [°C] : Temperature pinch at condenser %%
-%         options.Tdrum=148.7; %      [°C] : minimal drum temperature  %%
-%         options.eta_SiC=0.85; %     [-] : Isotrenpic efficiency for compression %%
-%         options.eta_SiT=[0.89 0.89]; %     [-] : Isotrenpic efficiency for Turbine. It can be a vector of 2 values :
-%         %             	             eta_SiT(1)=eta_SiT_HP,eta_SiT(2)=eta_SiT_others
-%         %             	             %%
+        options.nsout=8; %   [-] : Number of feed-heating %%
+        options.reheat=1; %    [-] : Number of reheating %%
+        options.T_max=565; %     [°C] : Maximum steam temperature %%
+        options.T_cond_out=24; %[°C] : Condenseur cold outlet temperature %%
+        options.p3_hp=310; %     [bar] : Maximum pressure  %%
+        options.drumFlag=1; %   [-] : if =1 then drum if =0 => no drum.  %%
+        options.eta_mec=0.99; %    [-] : mecanic efficiency of shafts bearings %%
+        % options.comb is a structure containing combustion data :
+        options.comb=struct;
+        options.comb.Tmax=1050; %      [°C] : maximum combustion temperature
+        %options.comb.lambda=0; %    [-] : air excess
+        options.comb.x=0; %         [-] : the ratio O_x/C. Example 0.05 in CH_1.2O_0.05
+        options.comb.y=4; %         [-] : the ratio H_y/C. Example 1.2 in CH_1.2O_0.05
+        options.T_exhaust=80; %  [°C] : Temperature of exhaust gas out of the chimney %%
+        options.p_3=62; %        [-] : High pressure after last reheating  %%
+        options.x4=0.99; %         [-] : Vapor ratio [gaseous/liquid] (in french : titre) %%
+        options.T_0=15; %        [°C] : Reference temperature %%
+        options.TpinchSub=4; %  [°C] : Temperature pinch at the subcooler %%
+        options.TpinchEx=10; %   [°C] : Temperature pinch at a heat exchanger %%
+        options.TpinchCond=8; % [°C] : Temperature pinch at condenser %%
+        options.Tdrum=148.7; %      [°C] : minimal drum temperature  %%
+        options.eta_SiC=0.85; %     [-] : Isotrenpic efficiency for compression %%
+        options.eta_SiT=[0.89 0.89]; %     [-] : Isotrenpic efficiency for Turbine. It can be a vector of 2 values :
+        %             	             eta_SiT(1)=eta_SiT_HP,eta_SiT(2)=eta_SiT_others
+        %             	             %%
     end
 end
 
@@ -457,31 +457,31 @@ end
 % Puissances
 P_hp=m3*(h3-h4); % HP turbine
 P_hpx=m3*(e3-e4);
-P_ip=0; % IP turbine
-P_ipx=0;
+P_ip=m6*(1+sum(X6_flows(1:ind_drum-2)))*(h5-h6(ind_drum-1)); % IP turbine
+P_ipx=m6*(1+sum(X6_flows(1:ind_drum-2)))*(e5-e6(ind_drum-1));
 for k=ind_drum:nsout-1
-   P_ip= P_ip+(1+X6_flows(k-1))*m6*(h5-h6(k)); 
-   P_ipx= P_ipx+(1+X6_flows(k-1))*m6*(e5-e6(k)); 
+   P_ip= P_ip  +X6_flows(k-1)*m6*(h5-h6(k)); 
+   P_ipx=P_ipx +X6_flows(k-1)*m6*(e5-e6(k));  
 end
-P_lp=0; % LP Turbine
-P_lpx=0;
+P_lp=m6*(h6(ind_drum)-h6(1));% LP Turbine
+P_lpx=m6*(e6(ind_drum)-e6(1));
 for k=2:ind_drum-1
-   P_lp= P_lp+(1+X6_flows(k-1))*m6*(h6(ind_drum)-h6(k-1)); 
-   P_lpx= P_lpx+(1+X6_flows(k))*m6*(e6(ind_drum)-e6(k-1)); 
+   P_lp= P_lp  +X6_flows(k-1)*m6*(h6(ind_drum)-h6(k)); 
+   P_lpx=P_lpx +X6_flows(k-1)*m6*(e6(ind_drum)-e6(k)); 
 end
 
-Ppa=m2*(h3-h2); % Pump Pa
-Ppax=m2*(e3-e2); 
+Ppa=m2*(h2-h1); % Pump Pa
+Ppax=m2*(e2-e1); 
 Ppe=m6*(h8-h7(1)); % Pump Pe
 Ppex=m6*(e8-e7(1));
 
 if options.drumFlag==1
     Ppb= m2*(h9(ind_drum)-h7(ind_drum));
     Ppbx= m2*(e9(ind_drum)-e7(ind_drum));    
-    DATEN(3)=DATEN(3)+sum(XMASSFLOW(1:ind_drum-1)*(h_sc-h7(1))); % perte_cond [kW]
+    DATEN(3)=DATEN(3)+sum(XMASSFLOW(1:ind_drum-2)*(h_sc-h7(1))); % perte_cond [kW]
 else
-    DATEN(3)=DATEN(3)+sum(XMASSFLOW.*(h_sc-h7(1))); % perte_cond [kW]
-    Ppb=O;
+    DATEN(3)=DATEN(3); % perte_cond [kW]
+    Ppb=0;
     Ppbx=0;
 end
 
@@ -506,7 +506,7 @@ DATEN(3)=m6*(h6(1)-h7(1)); % perte_cond [kW]
 
 DATEX(1)=P_e*(1/options.eta_mec - 1); % perte_mec [kW]
 DATEX(2)=mc*ec-P_e; % perte_totex [kW]
-DATEX(3)=(PmT-PmC) - (PmTx-PmCx); % perte_rotex [kW]
+DATEX(3)= (PmTx-PmCx) - (PmT-PmC); % perte_rotex [kW]
 DATEX(4)=mc*ec - mf*(ef-er); % perte_combex [kW]
 DATEX(5)= m6*(e6(1)-e7(1)); % perte_condex [kW]
 DATEX(6)=mf*(e_exh - er); % perte_chemex [kW]
@@ -515,7 +515,7 @@ DATEX(7)=mf*(ef-e_exh) - m3*(e3-e2);  % perte_transex [kW]
 if options.drumFlag==1
     DATEX(5)=DATEX(5)+sum(XMASSFLOW(1:ind_drum-1)*e_sc-e7(1)); % perte_condex [kW]
 else
-    DATEX(5)=DATEX(5)+sum(XMASSFLOW.*(e_sc-e7(1))); % perte_condex [kW]
+    DATEX(5)=DATEX(5); % perte_condex [kW]
 end
 
 MASSFLOW(2)=m2; % water massflow at 2 [kg/s]
@@ -615,12 +615,13 @@ title(sprintf('Steam Turbine Energy pie chart \n Primary power :  %.1f [MW]',mc*
 
 
 FIG(4)=figure('visible',disp);
-pie([P_e ; DATEX(1); DATEX(3:end)],{sprintf('%s \n %.1f [MW]','Effective power',P_e*1e-3),...
-    sprintf('%s \n %.1f [MW]','Mechanical losses',DATEX(1)*1e-3),...
+pie([P_e ; DATEX(4); DATEX(6), DATEX(7),DATEX(3), DATEX(5), DATEX(1)],{sprintf('%s \n %.1f [MW]','Effective power',P_e*1e-3),...
+   sprintf('%s \n %.1f [MW]','Combustion irreversibility',DATEX(4)*1e-3)...
+    sprintf('%s \n %.1f [MW]','Chimney loss',DATEX(6)*1e-3),...
+    sprintf('%s : %.1f [MW]','Heat transfer loss',DATEX(7)*1e-3)});
     sprintf('%s \n %.1f [MW]','Turbine & compressor irreversibilities',DATEX(3)*1e-3),...
-    sprintf('%s \n %.1f [MW]','Combustion irreversibility',DATEX(4)*1e-3)...
     sprintf('%s \n %.1f [MW]','Condensor loss',DATEX(5)*1e-3),...
-    sprintf('%s \n %.1f [MW]','Chemney loss',DATEX(6)*1e-3),sprintf('%s : %.1f [MW]','Heat transfer loss',DATEX(7)*1e-3)});
+   sprintf('%s \n %.1f [MW]','Mechanical losses',DATEX(1)*1e-3),...
 title(sprintf('Steam Turbine Exergy pie chart \n Primary exergy flux :  %.1f [MW]',mc*ec*1e-3));
 
 end
