@@ -124,7 +124,7 @@ if ~isfield(options,'r')
 end
 
 if ~isfield(options,'k_cc')
-    options.k_c=0.95;
+    options.k_cc=0.95;
 end
 
 if ~isfield(options,'T_3')
@@ -147,6 +147,9 @@ if ~isfield(options,'GraphCompute')
     options.GraphCompute=1;
 end
 
+if ~isfield(options,'ER')
+    options.ER=0;
+end
 
 %%%%%%APPEL FONCTION ETAT%%%%%
 T0=273.15;

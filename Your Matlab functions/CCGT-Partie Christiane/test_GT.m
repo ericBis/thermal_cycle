@@ -15,7 +15,7 @@ end
 
 try
     test = ETA(round(1+5*rand()));
-    if test<    =1&&test>=0
+    if test<=1&&test>=0
         fprintf('\n efficiency correct order of magnitude') 
     else
         fprintf('\n efficiency higher than 1 or lower than 0')  

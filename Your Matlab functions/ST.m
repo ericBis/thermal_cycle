@@ -806,7 +806,7 @@ end
            kd=k+1;
            A(k,k)= h7(kd)-h6(kd);
            A(k,k+1:nsout)= A(k,k+1:nsout)+(h7(kd)-h7(kd+1));
-           A(k,1:k-1)= A(k,1:k-1) - (h7(kd)-h9(kd-1)); %CHECKER
+           A(k,1:k-1)= A(k,1:k-1) - (h7(kd)-h9(kd-1)); 
            
            B(k)=h9(kd-1)- h7(kd);
            
