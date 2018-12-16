@@ -98,6 +98,7 @@ if nargin<3
         options.eta_PiC=0.9;
         options.eta_PiT=0.9;
         options.NTU=4;
+        options.ER=0;
     end
 end
 
@@ -200,16 +201,24 @@ Pm = puissanceMotrice(enthalpieVector,MFair,MFfumee); %en [MW]
 Pfm = puissanceFrottementMecanique(enthalpieVector,MFair,MFfumee);%en [MW]
 
 %Puissance exergetique
-Protex = puissanceRotorExerg(exergieVector,MFair,MFfumee); %en [MW]
+ea=exergie(2);
+ecr=cpMoyenComb*((options.T_ext+T0)-T1)-cpMoyenComb*T1*log((options.T_ext+T0)/T1);
+    if options.ER==1
+    er=ea*((lambda*pouvoirComburivor)/(lambda*pouvoirComburivor+1))+ecr*(1/(lambda*pouvoirComburivor+1));
+    else er=0;
+    end
+
+
+
+Protex = puissanceRotorExerg(MFair,MFfumee,entrop);
 exergieComb = exergieCombustible (Y,X); %en [kJ/kg]
 Pcomb = puissanceCombExerg(MFcomb,exergieComb); %en [MW] EXERGY
 PexhExerg = puissanceExhaustExerg(exergieVector,MFair,MFfumee); %en [MW]
+PerteExComb = perteAlaComb (MFfumee,MFcomb,exergieComb,exergieVector);
 PfmecaExerg = Pfm; %en [MW]
 
 %Rendement energetique et exergetique
-ea=exergie(2);
-ecr=cpMoyenComb*((options.T_ext+T0)-T1)-cpMoyenComb*T1*log((options.T_ext+T0)/T1);
-er=ea*((lambda*pouvoirComburivor)/(lambda*pouvoirComburivor+1))+ecr*(1/(lambda*pouvoirComburivor+1));
+
 eta_totEn = rdtTotalEnergetique(Pe,MFcomb,PCI);
 eta_cyclEn = rdtCyclEnergetique(MFair,Pm,enthalpieVector,MFfumee);
 eta_cyclEx = rdtCyclExergetique(Pm,exergieVector,MFair,MFfumee);
@@ -221,7 +230,7 @@ eta_meca = rdtMecanique(Pe,Pm);
 %%%%%OUTPUT VARIABLES%%%%%
 ETA=[eta_cyclEn,eta_totEn,eta_cyclEx,eta_totEx,eta_rotEx,eta_combEx];
 DATEN=[Pfm,Pexh]*1000;%en [kW]
-DATEX=[PfmecaExerg,Protex,Pcomb,PexhExerg]*1000;%en [kW]
+DATEX=[PfmecaExerg,Protex,PerteExComb,PexhExerg]*1000;%en [kW]
 DAT=matriceEtats;
 MASSFLOW=[MFair,MFcomb,MFfumee];
 COMBUSTION = struct();
@@ -235,6 +244,8 @@ COMBUSTION.fum=MFComposition;
 
 %%%% CALCUL ECHANGEUR DE CHALEUR %%%%
 %Calcul de T2R en fonction du NTU
+
+if options.NTU~=0
 T2R=(TemperatureEtats(4)*options.NTU+TemperatureEtats(2))/(1+options.NTU);
 t2R=T2R-273.15;
 %Calcul de T5 en fonction d'un bilan d'energie
@@ -246,6 +257,7 @@ deltaT5_T2=T5-TemperatureEtats(2)%[K]
 eta_EchangeurCyclenGT = eta_ExchangeCyclenGT()
 S5=entropy_plotFum(T5,pressions(4));
 H5=cpMoyenFumee(T0,T5,Y,X,lambda)*(T5-T0);
+end
 
 %%%% PLOTS %%%%%
 if options.GraphCompute==1
@@ -256,56 +268,56 @@ if options.GraphCompute==1
         disp='off';
     end
     
-    if options.NTU~=0
-        n_points=5;
-    else
-        n_points=4;
-    end
-    
-    FIG = gobjects(4,1);
-    n_pt=30;
-    t=zeros(n_points*n_pt,1);
-    s=zeros(n_points*n_pt,1);
-    h=zeros(n_points*n_pt,1);
-    kn=1;
-    
-    for k=1:n_points
-        [t(kn:kn+n_pt-1),s(kn:kn+n_pt-1),h(kn:kn+n_pt-1)]=plot_TS_TH(k,n_pt);
-        kn=kn+n_pt;
-    end
-    
-    %T-S
-    FIG(1)=figure('visible',disp);
-    hold on
-    title('Gas turbine T-s diagram');
-    ylabel('Temperature [°C]');
-    xlabel('Entropy [kJ/kg/K]');
-    leg{1}='';
-    for k=1:4
-        plot(entrop(k),TemperatureEtats(k),'*')
-        leg{k}=['Etat ' num2str(k)];
-    end
-    if options.NTU~=0
-        plot(S5,T5,'*')
-        leg{5}=['Etat ' num2str(5)];
-    end
-    legend(leg)
-    plot(s,t,'k','HandleVisibility','off');
-    
-    %H-S
-    FIG(2)=figure('visible',disp);
-    hold on
-    title('Gas turbine h-s diagram');
-    ylabel('Enthalpie [kJ/kg]');
-    xlabel('Entropy [kJ/kg/K]');
-    for k=1:4
-        plot(entrop(k),enth(k),'*')
-    end  
-    if options.NTU~=0
-        plot(S5,H5,'*')
-    end
-    legend(leg)
-    plot(s,h,'k','HandleVisibility','off');
+%     if options.NTU~=0
+%         n_points=5;
+%     else
+%         n_points=4;
+%     end
+%     
+%     FIG = gobjects(4,1);
+%     n_pt=30;
+%     t=zeros(n_points*n_pt,1);
+%     s=zeros(n_points*n_pt,1);
+%     h=zeros(n_points*n_pt,1);
+%     kn=1;
+%     
+%     for k=1:n_points
+%         [t(kn:kn+n_pt-1),s(kn:kn+n_pt-1),h(kn:kn+n_pt-1)]=plot_TS_TH(k,n_pt);
+%         kn=kn+n_pt;
+%     end
+%     
+%     %T-S
+%     FIG(1)=figure('visible',disp);
+%     hold on
+%     title('Gas turbine T-s diagram');
+%     ylabel('Temperature [°C]');
+%     xlabel('Entropy [kJ/kg/K]');
+%     leg{1}='';
+%     for k=1:4
+%         plot(entrop(k),TemperatureEtats(k),'*')
+%         leg{k}=['Etat ' num2str(k)];
+%     end
+%     if options.NTU~=0
+%         plot(S5,T5,'*')
+%         leg{5}=['Etat ' num2str(5)];
+%     end
+%     legend(leg)
+%     plot(s,t,'k','HandleVisibility','off');
+%     
+%     %H-S
+%     FIG(2)=figure('visible',disp);
+%     hold on
+%     title('Gas turbine h-s diagram');
+%     ylabel('Enthalpie [kJ/kg]');
+%     xlabel('Entropy [kJ/kg/K]');
+%     for k=1:4
+%         plot(entrop(k),enth(k),'*')
+%     end  
+%     if options.NTU~=0
+%         plot(S5,H5,'*')
+%     end
+%     legend(leg)
+%     plot(s,h,'k','HandleVisibility','off');
     
     %Pie Charts
     
@@ -546,8 +558,8 @@ end
     end
 
 %Functions Exergetic Power
-    function Protex = puissanceRotorExerg(exergieVector,MFair,MFfumee)
-        Protex=(MFfumee*(exergieVector(3)-exergieVector(4))-MFair*(exergieVector(2)-exergieVector(1)))*10^(-3);
+    function Protex = puissanceRotorExerg(MFair,MFfumee,entrop)
+    Protex=((MFfumee*T0*(entrop(4)-entrop(3)))+MFair*T0*(entrop(2)-entrop(1)))*10^(-3);
     end
 
     function exergieComb = exergieCombustible (Y,X)
@@ -564,6 +576,9 @@ end
         PexhExerg =(MFfumee*exergieVector(4)-MFair*exergieVector(1))*10^(-3);
     end
 
+ function PerteExComb = perteAlaComb (MFfumee,MFcomb,exergieComb,exergieVector)
+    PerteExComb=(MFcomb*exergieComb-MFfumee*(exergieVector(3))+MFair*exergieVector(2))*10^(-3);
+    end
 %Exergetic and Energetic fficiencies
     function eta_totEn = rdtTotalEnergetique(Pe,MFcomb,PCI)
         eta_totEn=Pe/((MFcomb*PCI)*10^(-3));

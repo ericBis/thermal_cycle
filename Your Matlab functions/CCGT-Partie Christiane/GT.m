@@ -163,14 +163,14 @@ end
     Pexh = puissanceExhaust(enthalpieVector,MFair,MFfumee); %en [MW]
     Pm = puissanceMotrice(enthalpieVector,MFair,MFfumee); %en [MW]
     Pfm = puissanceFrottementMecanique(enthalpieVector,MFair,MFfumee);%en [MW]
-
+    
     %Puissance exergetique
-    Protex = puissanceRotorExerg(exergieVector,MFair,MFfumee); %en [MW]
+    Protex = puissanceRotorExerg(MFair,MFfumee,entrop); %en [MW]
     exergieComb = exergieCombustible (Y,X); %en [kJ/kg]
     Pcomb = puissanceCombExerg(MFcomb,exergieComb); %en [MW] EXERGY 
     PexhExerg = puissanceExhaustExerg(exergieVector,MFair,MFfumee); %en [MW]
     PfmecaExerg = Pfm; %en [MW]
-    PerteExComb = perteAlaComb (MFumee,exergieVector);
+    PerteExComb = perteAlaComb(MFumee,MFair,MFcomb,exergieCombustible,exergieVector);
     %Rendement energetique et exergetique
     ea=exergie(2);
     ecr=cpMoyenComb*((options.T_ext+T0)-T1)-cpMoyenComb*T1*log((options.T_ext+T0)/T1);
@@ -440,8 +440,8 @@ end
     end
 
     %Functions Exergetic Power 
-    function Protex = puissanceRotorExerg(exergieVector,MFair,MFfumee)
-    Protex=(MFfumee*(exergieVector(3)-exergieVector(4))-MFair*(exergieVector(2)-exergieVector(1)))*10^(-3);
+    function Protex = puissanceRotorExerg(MFair,MFfumee,entrop)
+    Protex=((MFfumee*T0*(entrop(4)-entrop(3)))+MFair*T0*(entrop(2)-entrop(1)))*10^(-3);
     end
 
     function exergieComb = exergieCombustible (Y,X)
@@ -450,8 +450,8 @@ end
     end
     end
 
-    function PerteExComb = perteAlaComb (MFumee,exergieVector)
-    PerteExComb=MFumee*exergieVector(3);
+    function PerteExComb = perteAlaComb (MFumee,MFair,MFcomb,exergieCombustible,exergieVector)
+    PerteExComb=MFumee*exergieVector(3)-(MFair*exergieVector(2)+MFcomb*exergieCombustible);
     end
 
     function Pcomb = puissanceCombExerg(MFcomb,exergieCombustible)%en [MW]
