@@ -97,7 +97,7 @@ if nargin<3
         options.T_3=1400;
         options.eta_PiC=0.9;
         options.eta_PiT=0.9;
-        options.NTU=4;
+        options.NTU=0;
         options.ER=0;
     end
 end
@@ -207,9 +207,6 @@ ecr=cpMoyenComb*((options.T_ext+T0)-T1)-cpMoyenComb*T1*log((options.T_ext+T0)/T1
     er=ea*((lambda*pouvoirComburivor)/(lambda*pouvoirComburivor+1))+ecr*(1/(lambda*pouvoirComburivor+1));
     else er=0;
     end
-
-
-
 Protex = puissanceRotorExerg(MFair,MFfumee,entrop);
 exergieComb = exergieCombustible (Y,X); %en [kJ/kg]
 Pcomb = puissanceCombExerg(MFcomb,exergieComb); %en [MW] EXERGY
@@ -268,56 +265,56 @@ if options.GraphCompute==1
         disp='off';
     end
     
-%     if options.NTU~=0
-%         n_points=5;
-%     else
-%         n_points=4;
-%     end
-%     
-%     FIG = gobjects(4,1);
-%     n_pt=30;
-%     t=zeros(n_points*n_pt,1);
-%     s=zeros(n_points*n_pt,1);
-%     h=zeros(n_points*n_pt,1);
-%     kn=1;
-%     
-%     for k=1:n_points
-%         [t(kn:kn+n_pt-1),s(kn:kn+n_pt-1),h(kn:kn+n_pt-1)]=plot_TS_TH(k,n_pt);
-%         kn=kn+n_pt;
-%     end
-%     
-%     %T-S
-%     FIG(1)=figure('visible',disp);
-%     hold on
-%     title('Gas turbine T-s diagram');
-%     ylabel('Temperature [°C]');
-%     xlabel('Entropy [kJ/kg/K]');
-%     leg{1}='';
-%     for k=1:4
-%         plot(entrop(k),TemperatureEtats(k),'*')
-%         leg{k}=['Etat ' num2str(k)];
-%     end
-%     if options.NTU~=0
-%         plot(S5,T5,'*')
-%         leg{5}=['Etat ' num2str(5)];
-%     end
-%     legend(leg)
-%     plot(s,t,'k','HandleVisibility','off');
-%     
-%     %H-S
-%     FIG(2)=figure('visible',disp);
-%     hold on
-%     title('Gas turbine h-s diagram');
-%     ylabel('Enthalpie [kJ/kg]');
-%     xlabel('Entropy [kJ/kg/K]');
-%     for k=1:4
-%         plot(entrop(k),enth(k),'*')
-%     end  
-%     if options.NTU~=0
-%         plot(S5,H5,'*')
-%     end
-%     legend(leg)
-%     plot(s,h,'k','HandleVisibility','off');
+    if options.NTU~=0
+        n_points=5;
+    else
+        n_points=4;
+    end
+    
+    FIG = gobjects(4,1);
+    n_pt=30;
+    t=zeros(n_points*n_pt,1);
+    s=zeros(n_points*n_pt,1);
+    h=zeros(n_points*n_pt,1);
+    kn=1;
+    
+    for k=1:n_points
+        [t(kn:kn+n_pt-1),s(kn:kn+n_pt-1),h(kn:kn+n_pt-1)]=plot_TS_TH(k,n_pt);
+        kn=kn+n_pt;
+    end
+    
+    %T-S
+    FIG(1)=figure('visible',disp);
+    hold on
+    title('Gas turbine T-s diagram');
+    ylabel('Temperature [°C]');
+    xlabel('Entropy [kJ/kg/K]');
+    leg{1}='';
+    for k=1:4
+        plot(entrop(k),TemperatureEtats(k),'*')
+        leg{k}=['Etat ' num2str(k)];
+    end
+    if options.NTU~=0
+        plot(S5,T5,'*')
+        leg{5}=['Etat ' num2str(5)];
+    end
+    legend(leg)
+    plot(s,t,'k','HandleVisibility','off');
+    
+    %H-S
+    FIG(2)=figure('visible',disp);
+    hold on
+    title('Gas turbine h-s diagram');
+    ylabel('Enthalpie [kJ/kg]');
+    xlabel('Entropy [kJ/kg/K]');
+    for k=1:4
+        plot(entrop(k),enth(k),'*')
+    end  
+    if options.NTU~=0
+        plot(S5,H5,'*')
+    end
+    legend(leg)
+    plot(s,h,'k','HandleVisibility','off');
     
     %Pie Charts
     
