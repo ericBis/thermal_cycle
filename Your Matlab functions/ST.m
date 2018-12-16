@@ -175,7 +175,7 @@ end
 
 if ~isfield(options,'comb')
     options.comb=struct;
-    options.comb.Tmax=1050; %      [°C] : maximum combustion temperature
+    options.comb.Tmax=1400; %      [°C] : maximum combustion temperature
     %options.comb.lambda=0; %    [-] : air excess
     options.comb.x=0; %         [-] : the ratio O_x/C. Example 0.05 in CH_1.2O_0.05
     options.comb.y=4; %         [-] : the ratio H_y/C. Example 1.2 in CH_1.2O_0.05
@@ -192,7 +192,7 @@ else
 end
 
 if ~isfield(options,'T_exhaust')
-    options.T_exhaust=0; % [°C]
+    options.T_exhaust=80; % [°C]
 end
 
 if ~isfield(options,'eta_SiC')
@@ -240,6 +240,10 @@ end
 
 if ~isfield(options,'GraphCompute')
     options.GraphCompute=1;
+end
+
+if ~isfield(options,'erCompute')
+    options.erCompute=0;
 end
 
 %
@@ -319,7 +323,7 @@ e6=(h6-h0)-T_0*(s6-s0);
 
 if options.drumFlag==1
     ind_drum=1;
-    t_sat=XSteam('Tsat_p',p6(ind_drum));
+    t_sat=0;
     while t_sat < options.Tdrum % Trouve le soutirage allant jusqu'au drum
         ind_drum=ind_drum+1;
         t_sat=XSteam('Tsat_p',p6(ind_drum));
@@ -346,8 +350,10 @@ else
     h_feed=h6(2:end);
 end
 
+t90=40; % [°C]  we pose a post-subcooler temperature
+
 %Before the drum
-[t_fs,h_fs,p_fs,s_fs,t9,h9,p9,s9,Xbled1,h_sc,e_sc] = states7_9_pre_drum(h_feed,p_feed,p8,t8,h8);
+[t_fs,h_fs,p_fs,s_fs,t9,h9,p9,s9] = states7_9_pre_drum2(h_feed,p_feed,t90);
 
 if options.drumFlag==1
     p_drum=XSteam('psat_T',options.Tdrum);
@@ -365,7 +371,7 @@ end
 if options.drumFlag==1
     p_feed=p6(ind_drum+1:end);
     h_feed=h6(ind_drum+1:end);
-    [t_w,h_w,p_w,s_w,t_9,h_9,p_9,s_9,Xbled2] = states7_9_post_drum(h_feed,p_feed,h7(end),s7(end),options.eta_SiC);
+    [t_w,h_w,p_w,s_w,t_9,h_9,p_9,s_9] = states7_9_post_drum2(h_feed,p_feed,h7(end),s7(end),options.eta_SiC);
     
     t7=[t7 ; t_w ];
     p7=[p7 ; p_w ];
@@ -395,29 +401,20 @@ p2=p3/k_cc;
 [t2,h2,s2,x2,e2] = compression(eta_SiC,p2,h1,s1);
 
 % Flowrates X
-
-if options.drumFlag==1
-    [X3, X5, X6, Xd] = X_flowrates(h6,h7,h9,Xbled1,Xbled2,options.drumFlag,ind_drum);
-    X6_flows= [X6 ; Xbled1 ; Xd ; Xbled2];
+if options.nsout >0
+[X6_flows,h_sc,e_sc]=X_flowrates();
 else
-    [X3, X5, X6, ~] = X_flowrates(h6,h7,h9,Xbled1,0,options.drumFlag,0);
-    X6_flows=[X6 ; Xbled1];
+    X6_flows=0;
 end
 
-m7 = flowR7(h3,h4,h5,h6,options.drumFlag,ind_drum,X3,X5,X6_flows(2:end),options.eta_mec,P_e);
+m6 = flow_mass(X6_flows);
 
-m3=X3*m7;
-m5=X5*m7;
-m6=X6*m7;
+m7=(1+sum(X6_flows))*m6;
+m5=(1+sum(X6_flows(1:end-1)))*m6;
+m2=m7;
+m3=m2;
 
-XMASSFLOW=zeros(nsout,1);
-
-if options.drumFlag==1
-    XMASSFLOW(1:ind_drum-1)=X6_flows(2:ind_drum)*m7;
-    XMASSFLOW(ind_drum:end)=X6_flows(ind_drum+1:end)*m3;
-else
-    XMASSFLOW=m7*X6_flows(2:end);
-end
+XMASSFLOW=m6*X6_flows;
 
 %Prealocations
 DATEN=zeros(3,1);
@@ -425,62 +422,87 @@ DATEX=zeros(7,1);
 ETA=zeros(9,1);
 MASSFLOW=zeros(4,1);
 
-DAT=[ t1 t2 t3 t4 t5 t6 t7' t8 t9' ;...
-    p1 p2 p3 p4 p5 p6 p7' p8 p9' ;...
-    h1 h2 h3 h4 h5 h6 h7' h8 h9' ;...
-    s1 s2 s3 s4 s5 s6 s7' s8 s9' ;...
-    e1 e2 e3 e4 e5 e6 e7' e8 e9' ;...
-    x1 x2 x3 x4 x5 x6 x7' x8 x9'];
-
 % Combustion
-[COMBUSTION,h_fum,ratio_fum,ma1,h_air,TmaxComb] = combustion(options.comb);
-combu=combustion_ST(DAT,m3,XMASSFLOW,nsout,options.reheat,...
-    options.drumFlag,0,options)
-COMBUSTION
+[COMBUSTION,h_fum,ratio_air,ratio_fum,ma1,h_air,TmaxComb] = combustion(options.comb);
 Q_I=m3*(h3-h2)+ m5*(h5-h4); % Combustion heat energy
-h_exh = getEnthalpy('fum',ratio_fum,options.T_max+TpinchEx);
+h_exh = getEnthalpy('fum',ratio_fum,T_0,options.T_exhaust+273.15);
 mc=Q_I/((1+COMBUSTION.lambda*ma1)*(h_fum-h_exh));
 m_air = COMBUSTION.lambda*ma1*mc;
 mf=m_air+mc;
 
 m2=m3; % flow rate a point 2
+
+COMBUSTION.fum=ratio_fum.*mf;
+ef = h_fum - T_0*(integral(@(T) getCpGas('fum',ratio_fum,T)./T,T_0,TmaxComb));
+e_exh = h_exh - T_0*(integral(@(T) getCpGas('fum',ratio_fum,T)./T,T_0,options.T_exhaust+273.15));
+
+if options.erCompute==1 % Preheating of the air in the boiler
+    lambd=COMBUSTION.lambda;
+    Tb=t2+TpinchEx+273.15;
+    Tc=options.T_exhaust;
+    Tin=273.15+15; % Air enters at 15°C
+    
+    eq=@(T) (m_air*getEnthalpy('air',ratio_air,Tin,T))-...
+        (mf*getEnthalpy('fum',ratio_fum,Tc,Tb));
+    
+    optis = optimset('Display','off');
+    Ta1=fsolve(eq,300,optis);
+    
+    ea=getEnthalpy('air',ratio_air,Tin,Ta1)-T_0*integral(@(T) getCpGas('air',ratio_air,T)./T,T_0,Ta1);
+    er=ea*(lambd*ma1)/(lambd*ma1+1);
+else % no preheating of the air in the boiler
+    er=0;
+end
+
+% Puissances
+P_hp=m3*(h3-h4); % HP turbine
+P_hpx=m3*(e3-e4);
+P_ip=0; % IP turbine
+P_ipx=0;
+for k=ind_drum:nsout-1
+   P_ip= P_ip+(1+X6_flows(k-1))*m6*(h5-h6(k)); 
+   P_ipx= P_ipx+(1+X6_flows(k-1))*m6*(e5-e6(k)); 
+end
+P_lp=0; % LP Turbine
+P_lpx=0;
+for k=2:ind_drum-1
+   P_lp= P_lp+(1+X6_flows(k-1))*m6*(h6(ind_drum)-h6(k-1)); 
+   P_lpx= P_lpx+(1+X6_flows(k))*m6*(e6(ind_drum)-e6(k-1)); 
+end
+
+Ppa=m2*(h3-h2); % Pump Pa
+Ppax=m2*(e3-e2); 
+Ppe=m6*(h8-h7(1)); % Pump Pe
+Ppex=m6*(e8-e7(1));
+
+if options.drumFlag==1
+    Ppb= m2*(h9(ind_drum)-h7(ind_drum));
+    Ppbx= m2*(e9(ind_drum)-e7(ind_drum));    
+    DATEN(3)=DATEN(3)+sum(XMASSFLOW(1:ind_drum-1)*(h_sc-h7(1))); % perte_cond [kW]
+else
+    DATEN(3)=DATEN(3)+sum(XMASSFLOW.*(h_sc-h7(1))); % perte_cond [kW]
+    Ppb=O;
+    Ppbx=0;
+end
+
+PmC=Ppe+Ppa+Ppb;
+PmCx=Ppex+Ppax+Ppbx;
+%PmT=P_e/options.eta_mec;
+PmT=P_hp+P_ip+P_lp;
+PmTx=P_hpx+P_ipx+P_lpx;
+
+Q_Ix=m3*(e3-e2)+ m5*(e5-e4); % exergy of the combustion
+
+%Massflows
 MASSFLOW(1)=m_air;
 MASSFLOW(2)=m2;
 MASSFLOW(3)=mc;
 MASSFLOW(4)=mf;
 
-COMBUSTION.fum=ratio_fum.*mf;
-ef = h_fum - integral(@(T) getCpGas('fum',ratio_fum,T)./T,T_0,TmaxComb)*T_0;
-e_exh = h_exh - integral(@(T) getCpGas('fum',ratio_fum,T)./T,T_0,options.T_max+TpinchEx)*T_0;
-er=0; % Negligible for water
-
 % Pertes
 DATEN(1)=mc*LHV-(m3*(h3-h2)+m5*(h5-h4));  % perte_gen [kW]
 DATEN(2)=P_e*(1/options.eta_mec - 1); % perte_mec [kW]
 DATEN(3)=m6*(h6(1)-h7(1)); % perte_cond [kW]
-
-PmC=m2*(h3-h2)+m7*(h8-h7(1)); % Energy of the compressions
-PmCx=m3*(e3-e2)+m7*(e8-e7(1)); % Exergy of the compressions
-
-PmT=P_e/options.eta_mec;
-PmTx=m3*(e3-e4)+m5*(e5-e6(end-1));
-for j=nsout-1:1
-    PmTx= PmTx + (m5-sum(XMASSFLOW(j:end-1)))*(e6(j)-e6(j-1)); %% CHECK
-end
-
-if options.drumFlag==1
-    md=XMASSFLOW(ind_drum);
-    PmC= PmC + md*(h9(ind_drum)-h7(ind_drum));
-    PmCx= PmCx + md*(e9(ind_drum)-e7(ind_drum));
-    
-    PmTx= (PmTx - (m5-sum(XMASSFLOW(ind_drum:end-1)))...
-        *(e6(ind_drum)-e6(ind_drum-1)))/2; % CHECK AVEC GAUTHIER
-    DATEN(3)=DATEN(3)+sum(XMASSFLOW(1:ind_drum-1)*(h_sc-h7(1))); % perte_cond [kW]
-else
-    DATEN(3)=DATEN(3)+sum(XMASSFLOW.*(h_sc-h7(1))); % perte_cond [kW]
-end
-
-Q_Ix=m3*(e3-e2)+ m5*(e5-e4); % exergy of the combustion
 
 DATEX(1)=P_e*(1/options.eta_mec - 1); % perte_mec [kW]
 DATEX(2)=mc*ec-P_e; % perte_totex [kW]
@@ -499,7 +521,6 @@ end
 MASSFLOW(2)=m2; % water massflow at 2 [kg/s]
 MASSFLOW(3)=mc; % combustible massflow [kg/s]
 MASSFLOW(4)=mf; % exhaust gas massflow [kg/s]
-
 
 DAT=[ t1 t2 t3 t4 t5 t6 t7' t8 t9' ;...
     p1 p2 p3 p4 p5 p6 p7' p8 p9' ;...
@@ -669,7 +690,7 @@ end
         end
     end
 
-    function [t_w,h_w,p_w,s_w,t_9,h_9,p_9,s_9,Xbled,hsc,esc] = states7_9_pre_drum(h6,p6,p8,t8,h8)
+    function [t_w,h_w,p_w,s_w,t_9,h_9,p_9,s_9] = states7_9_pre_drum2(h6,p6,t90)
         %Computes the datas of states 7 and 9 and the rates X
         
         ns=length(h6); % Number of feed-heating used to warm up the water
@@ -696,61 +717,13 @@ end
             h_9(i+1)=XSteam('h_pT',p_9(i+1),t_9(i+1));
             s_9(i+1)=XSteam('s_pT',p_9(i+1),t_9(i+1));
         end
+        t_9(1)=t90;
+        h_9(1)=XSteam('h_pT',p_9(1),t_9(1));
+        s_9(1)=XSteam('s_pT',p_9(1),t_9(1));
         
-        if options.nsout >0
-        
-        % State sc : Between the subcooler and the Condensor
-        tsc=t8+TpinchSub;
-        psc=p_w(1);
-        hsc=XSteam('h_pt',psc,tsc);
-        ssc=XSteam('s_pt',psc,tsc);
-        esc=(hsc - h0) - T_0*(ssc-s0);
-        % Computations of the X
-        % They can be compbuted by resolving a linear system of type Ax=B
-        % Here x= [h9_0 X_I X_II ...]
-        
-        A=zeros(ns+1,ns+1);
-        A(end-1,1)=1;
-        A(end,1)=1;
-        A(end,2:end)=hsc-h_w(1);
-        
-        %Filling A
-        k=ns+1;
-        for i=2:ns
-            A(i,k:end)=h_w(k-1)-h_w(k-2);
-            k=k-1;
-        end
-        
-        k=ns;
-        for i=1:ns
-            A(i,k+1)=h6(k)-h_w(k);
-            k=k-1;
-        end
-        
-        B=zeros(ns+1,1);
-        B(end-1)=h_9(2);
-        B(end)=h8;
-        
-        k=ns;
-        for i=1:ns-1
-            B(i)=h_9(k+1)-h_9(k);
-            k=k-1;
-        end
-        
-        x=A\B;
-        h_9(1)=x(1);
-        t_9(1)=XSteam('t_ph',p8,h_9(1));
-        s_9(1)=XSteam('s_ph',p8,h_9(1));
-        Xbled=x(2:end);
-        else
-            Xbled=0;
-            hsc=0;
-            esc=0;
-        end
-
     end
 
-    function [t_w,h_w,p_w,s_w,t_9,h_9,p_9,s_9,Xbled] = states7_9_post_drum(h6,p6,h_bef,s_bef,eta_SiC)
+    function [t_w,h_w,p_w,s_w,t_9,h_9,p_9,s_9] = states7_9_post_drum2(h6,p6,h_bef,s_bef,eta_SiC)
         % Computes the datas of states 7 and 9 and the rates X after the
         % drum
         
@@ -796,101 +769,93 @@ end
         % They can be computed by resolving a linear system of type Ax=B
         % Here x= [ X_i X_i+1 ... X_N]
         
-        A=zeros(ns,ns);
-        
-        %Filling A
-        k=ns;
-        for i=2:ns
-            A(i,k:end)=h_w(k)-h_w(k-1);
-            k=k-1;
-        end
-        
-        k=ns;
-        for i=1:ns
-            A(i,k)=h6(k)-h_w(k);
-            k=k-1;
-        end
-        
-        B=zeros(ns,1);
-        k=ns;
-        
-        for i=1:ns
-            B(i)=h_9(k+1)-h_9(k);
-            k=k-1;
-        end
-        
-        Xbled=A\B;
-        t_9(1)=XSteam('t_ph',p_9(1),h_9(1));
-        s_9(1)=XSteam('s_ph',p_9(1),h_9(1));
     end
 
-    function [X3, X5, X6, Xd] = X_flowrates(h6,h7,h9,Xbled1,Xbled2,drumFlag,ind_drum)
-        %Computes the X_flowrates
-        % Xbled1 : X_i before the drum
-        % Xbled2: X_i after the drum
+    function [X,hsc,esc]= X_flowrates()      
         
-        if drumFlag == 1
-            A=zeros(4,4);
-            A(1,1:end)=[sum(Xbled2)*(h7(ind_drum+1)-h7(ind_drum))...
-                0 0 h6(ind_drum)-h7(ind_drum)];
-            A(2,1:end)=[sum(Xbled2)-Xbled2(end) -1 0 1];
-            A(3,1:end)=[0 0 1 0];
-            A(4,1:end)=[1-Xbled2(end) -1 0 0];
+        % State sc : Between the subcooler and the Condensor
+        tsc=t8+TpinchSub;
+        psc=p9(1);
+        hsc=XSteam('h_pt',psc,tsc);
+        ssc=XSteam('s_pt',psc,tsc);
+        esc=(hsc - h0) - T_0*(ssc-s0);
+        
+        % Computations of the X
+        % They can be compbuted by resolving a linear system of type Ax=B
+        % Here x= [X_I X_II ...]
+        
+        A=zeros(nsout,nsout);
+        B=zeros(nsout,1);
+        
+        if options.drumFlag==1
+           id=ind_drum-1; % drum indice
+           
+           %Before the drum
+           for k=1:id-1
+           kd=k+1;
+           % Before the drum
+           A(k,k)= h6(kd)-h7(kd);
+           A(k,k+1:id-1)=h7(kd+1)-h7(kd);
+           A(k,1:id-1)=A(k,1:id-1) - (h9(kd)-h9(kd-1));
+           
+           B(k)=h9(kd)-h9(kd-1);
+           end
+           
+           %At the drum
+           k=id;
+           kd=k+1;
+           A(k,k)= h7(kd)-h6(kd);
+           A(k,k+1:nsout)= A(k,k+1:nsout)+(h7(kd)-h7(kd+1));
+           A(k,1:k-1)= A(k,1:k-1) - (h7(kd)-h9(kd-1)); %CHECKER
+           
+           B(k)=h9(kd-1)- h7(kd);
+           
+           % After the drum
+           
+           for k=id+1:nsout-1
+               kd=k+1;
+               % Before the drum
+               A(k,k)= h6(kd)-h7(kd);
+               A(k,k+1:nsout)=  A(k,k+1:nsout) + (h7(kd+1)-h7(kd));
+               A(k,1:nsout)=A(k,1:nsout) - (h9(kd)-h9(kd-1));
+               
+               B(k)=h9(kd)-h9(kd-1);
+           end
+           
+           % Last exchanger
+           k=nsout;
+           kd=k+1;
+           A(k,k)= h6(kd)-h7(kd);
+           A(k,1:nsout)= A(k,1:nsout) - (h9(kd)-h9(kd-1));
+             
+            B(k)=h9(kd)-h9(kd-1);
             
-            B = [h7(ind_drum) - h9(ind_drum-1) ; -1 ; 1-sum(Xbled1) ; 0];
+            X=A\B;
             
-            x=A\B;
-            X3=x(1);
-            X5=x(2);
-            X6=x(3);
-            Xd=x(4); % X_flowrate in the drum
         else
-            A=zeros(3,3);
-            A(1,1:end)=[1 -1 0];
-            A(2,1:end)=[0 1 -1];
-            A(3,1:end)=[0 0 1];
             
-            B=[Xbled1(end) ; sum(Xbled1)-Xbled1(end) ; 1 - sum(Xbled1)];
-            
-            x=A\B;
-            X3=x(1);
-            X5=x(2);
-            X6=x(3);
-            Xd=nan; % No drum in this case
         end
     end
 
-    function m7 = flowR7(h3,h4,h5,h6,drumFlag,ind_drum,X3,X5,X6flows,eta_mec,P_e)
+    function m6 = flow_mass(X)
         % Computes the flow rate at point 7
         
         % Normalisation of Wm with regard to the point 7
         %Hp Turbine and start of the IP
         if options.nsout > 0
-        Wm=X3*(h3-h4)+ X5*(h5-h6(end-1));
+        Wm=(1+sum(X))*(h3-h4)+ (1+sum(X(1:end-1)))*(h5-h6(end-1));
+        tmp_deb=(1+sum(X(1:end-1)));
         else
-           Wm=X3*(h3-h4)+ X5*(h5-h6)
+           Wm=(h3-h4)+(h5-h6);
         end
-        tmp_deb=X5;
-        d_h=(h6(2:end)-h6(1:end-1))'; % enthalpie differences
-        if drumFlag ==1
-            for k=nsout:-1:2
-                if k > ind_drum
-                    tmp_deb=tmp_deb - X3*X6flows(k);
-                else
-                    tmp_deb=tmp_deb - X6flows(k);
-                end
-                Wm=Wm+tmp_deb*(h6(k)-h6(k-1));
-            end
-        else
-       for k=nsout:-1:2
-                    tmp_deb=tmp_deb - X6flows(k);
-                Wm=Wm+tmp_deb*(h6(k)-h6(k-1));
-            end           
-        end
-         m7=P_e/(eta_mec*Wm); % Flow rate a point 7
+            for k=nsout-1:-1:2
+            tmp_deb=tmp_deb -X(k);
+            Wm=Wm+tmp_deb*(h6(k)-h6(k-1));
+            end       
+         m6=P_e/(options.eta_mec*Wm); % Flow rate a point 7
     end
 
-    function [COMBUSTION,h_fum,ratio_fum,ma1,h_air,Tmax] = combustion(comb)
+    function [COMBUSTION,h_fum,ratio_air,ratio_fum,ma1,h_air,Tmax] = combustion(comb)
         x=comb.x;
         y=comb.y;
         ma1=(1+(y-2*x)/4)*(32+3.76*28.15)/(12.01+1.008*y+16*x);
@@ -903,15 +868,16 @@ end
         Mm_air=0.21*32+0.79*28; % [g/mol]
         ratio_O2=0.21*32/Mm_air;
         ratio_N2=0.79*28/Mm_air;
-        h_air = getEnthalpy('air',[ratio_O2 ; ratio_N2],T_ext);
+        ratio_air=[ratio_O2 ; ratio_N2];
+        h_air = getEnthalpy('air',ratio_air,T_0,T_ext);
         
-        opsolve=optimoptions('fsolve','Display','off');
+        opts=optimoptions('fsolve','Display','off');
         if isfield(comb,'lambda')
             lambda = comb.lambda;
-            Tmax = fsolve(@(Tmax) eqLambdaTmax(lambda,x,y,ma1,Tmax,LHV,h_air,h_fuel),1200,opsolve);
+            Tmax = fsolve(@(Tmax) eqLambdaTmax(lambda,x,y,ma1,Tmax,LHV,h_air,h_fuel),1300,opts);
         elseif isfield(comb,'Tmax')
             Tmax = comb.Tmax + 273.15;
-            lambda = fsolve(@(lambda) eqLambdaTmax(lambda,x,y,ma1,Tmax,LHV,h_air,h_fuel),2,opsolve);
+            lambda = fsolve(@(lambda) eqLambdaTmax(lambda,x,y,ma1,Tmax,LHV,h_air,h_fuel),1.5,opts);
         else
             error('comb must contain eitheir lambda or Tmax')
         end
@@ -922,7 +888,7 @@ end
         ratio_CO2f=44/Mm_fum;
         ratio_H2Of=0.5*y*18/Mm_fum;
         ratio_fum=[ratio_O2f; ratio_N2f; ratio_CO2f; ratio_H2Of];
-        h_fum = getEnthalpy('fum',ratio_fum,Tmax);
+        h_fum = getEnthalpy('fum',ratio_fum,T_0,Tmax);
         cpg = getCpGas('fum',ratio_fum,400);
         
         COMBUSTION=struct;
@@ -1014,8 +980,8 @@ end
         end
     end
 
-    function h = getEnthalpy(type,compo,T)
-        h = integral(@(T) getCpGas(type,compo,T),T_0,T);
+    function h = getEnthalpy(type,compo,T1,T2)
+        h = integral(@(T) getCpGas(type,compo,T),T1,T2);
     end
 
     function eq =eqLambdaTmax(lambda,x,y,ma1,Tmax,LHV,h_air,h_fuel)
@@ -1026,7 +992,7 @@ end
         ratio_H2Of=0.5*y*18/Mm_fum;
         
         compo_fum = [ratio_O2f; ratio_N2f; ratio_CO2f; ratio_H2Of];
-        hfum = getEnthalpy('fum',compo_fum,Tmax);
+        hfum = getEnthalpy('fum',compo_fum,T_0,Tmax);
         eq=(lambda*ma1+1)*hfum-lambda*ma1*h_air-LHV-h_fuel;
     end
 
