@@ -1,0 +1,25 @@
+%%%% VARIATION DE 1000 à 1600 degree pour voir l'influence de la chaudiere
+function GivePlotCCGT4()
+P_eg=225e3;
+options=struct;
+options.pmid=20;
+options.pdrum=4;
+options.x7=0.88;
+options.GT=struct;
+Vecteur_R=(12:0.5:30);
+VecteurTemp=(1000:50:1600);
+VecteurEtaExergTot=VecteurTemp;
+display=0;
+for i=1:length(VecteurEtaExergTot)
+options.GT.T_3=VecteurTemp(i);
+[ETA,~,~] = CCGT(P_eg,options,display);
+VecteurEtaExergTot(i)=ETA(6);
+end
+VecteurEtaExergTot(1) %0.5029
+VecteurEtaExergTot(end) %0.5866
+figure()
+plot(VecteurTemp,VecteurEtaExergTot)
+xlabel('Temperature °C')
+ylabel('rendement')
+title('CCGT')
+end
