@@ -1,4 +1,4 @@
-function [ETA MASSFLOW] = CCGT3P(P_eg,options,display)
+function [ETA MASSFLOW FIG] = CCGT3P(P_eg,options,display)
 % CCGT3P is a Combine cycle Gas Turbine with 2 pressure level
 % CCGT3P(P_e,options,display) compute the thermodynamics states for a CCGT
 % with 3 pressure level (cfr p166 english reference book) including
@@ -181,7 +181,7 @@ if ~isfield(options,'GraphCompute')
 end
 
 %%%%OUTPUT GT%%%%
-[ETA, DATEN, DATEX, DAT, MASSFLOW, COMBUSTION] = GT(P_eg,options.GT,display);
+[ETA, DATEN, DATEX, DAT, MASSFLOW, COMBUSTION,FIG] = GT(P_eg,options.GT,display);
 ETAGT=ETA;
 MASSFLOWGT=MASSFLOW;
 
@@ -400,43 +400,43 @@ if options.GraphCompute==1
     end
     
     
-    %Cloche T-S
-    S_plot=linspace(0,9.156,300);
-    T_HS=zeros(size(S_plot));
-    for c=1:length(T_HS)
-        T_HS(c)=XSteam('Tsat_s',S_plot(c));
-    end
-    
-    H_HS=zeros(size(S_plot));
-    [~,ind_tmax]=max(T_HS);
-    for c=1:ind_tmax
-        H_HS(c)=XSteam('hL_T',T_HS(c));
-    end
-    for c=ind_tmax+1:length(T_HS)
-        H_HS(c)=XSteam('hV_T',T_HS(c));
-    end
+%     %Cloche T-S
+%     S_plot=linspace(0,9.156,300);
+%     T_HS=zeros(size(S_plot));
+%     for c=1:length(T_HS)
+%         T_HS(c)=XSteam('Tsat_s',S_plot(c));
+%     end
+%     
+%     H_HS=zeros(size(S_plot));
+%     [~,ind_tmax]=max(T_HS);
+%     for c=1:ind_tmax
+%         H_HS(c)=XSteam('hL_T',T_HS(c));
+%     end
+%     for c=ind_tmax+1:length(T_HS)
+%         H_HS(c)=XSteam('hV_T',T_HS(c));
+%     end
         
     FIG = gobjects(4,1);
     
-    FIG(1)=figure('visible',disp);
-    hold on;
-    plot(S_plot,T_HS);
-    title('CCGT T-s diagram');
-    ylabel('Temperature [°C]');
-    xlabel('Entropy [kJ/kg/K]');
-    for i=1:17
-        plot_TS(i);
-    end
-    
-    FIG(2)=figure('visible',disp);
-    hold on;
-    plot(S_plot,H_HS);
-    title('CCGT h-s diagram');
-    ylabel('Enthalpy [kJ/kg]');
-    xlabel('Entropy [kJ/kg/K]');
-    for i=1:17
-        plot_HS(i);
-    end
+%     FIG(1)=figure('visible',disp);
+%     hold on;
+%     plot(S_plot,T_HS);
+%     title('CCGT T-s diagram');
+%     ylabel('Temperature [°C]');
+%     xlabel('Entropy [kJ/kg/K]');
+%     for i=1:17
+%         plot_TS(i);
+%     end
+%     
+%     FIG(2)=figure('visible',disp);
+%     hold on;
+%     plot(S_plot,H_HS);
+%     title('CCGT h-s diagram');
+%     ylabel('Enthalpy [kJ/kg]');
+%     xlabel('Entropy [kJ/kg/K]');
+%     for i=1:17
+%         plot_HS(i);
+%     end
     
     %%%%PIE CHART EXERG%%%%
     FIG(3)=figure('visible',disp);
@@ -510,395 +510,395 @@ ETA(8)=ETA(10)*ETA(11)* ETA(9); %eta_gex, Steam generator exergy efficiency
         e2=(h2-H0)-T0*(s2-S0);
     end
 
-    function plot_TS(ind)
-        n_pt=100;
-        switch ind
-            case 1 % Line 1-2
-                p=linspace(P1,P2,n_pt);
-                t=zeros(size(p));
-                s=zeros(size(p));
-                s(1)=S1;
-                t(1)=T1;
-                for k=2:n_pt-1
-                    [t(k),~,s(k),~,~] = compression(options.eta_SiC,p(k),H1,S1);
-                end
-                t(end)=T2;
-                s(end)=S2;
-                plot(s,t,'k','HandleVisibility','off');
-            case 2 % Line 3-4
-                n_pt=4*n_pt;
-                p=linspace(P3,P4,n_pt);
-                s=zeros(size(p));
-                t=zeros(size(p));
-                t(1)=T3;
-                s(1)=S3;
-                for k=2:n_pt-1
-                    [t(k),~,s(k),~] = expan_inter(options.eta_SiT,H4,H3,S3);
-                end
-                t(end)=T4;
-                s(end)=S4;
-                plot(s,t,'k','HandleVisibility','off');
-            case 3 % Line 5-6
-                n_pt=4*n_pt;
-                p=linspace(P5,P6,n_pt);
-                s=zeros(size(p));
-                t=zeros(size(p));
-                t(1)=T5;
-                s(1)=S5;
-                for k=2:n_pt-1
-                    [t(k),~,s(k),~] = expan_inter(options.eta_SiT,H6,H5,S5);
-                end
-                t(end)=T6;
-                s(end)=S6;
-                plot(s,t,'k','HandleVisibility','off');
-            case 4 % Line 6-7
-                n_pt=4*n_pt;
-                p=linspace(P6,P7,n_pt);
-                s=zeros(size(p));
-                t=zeros(size(p));
-                t(1)=T6;
-                s(1)=S6;
-                for k=2:n_pt-1
-                    [t(k),~,s(k),~] = expan_inter(options.eta_SiT,H7,H6,S6);
-                end
-                t(end)=T7;
-                s(end)=S7;
-                plot(s,t,'k','HandleVisibility','off');
-            case 5 % Line 8'-9'
-                p=linspace(P8_prime,P9_prime,n_pt);
-                t=zeros(size(p));
-                s=zeros(size(p));
-                s(1)=S8_prime;
-                t(1)=T8_prime;
-                for k=2:n_pt-1
-                    [t(k),~,s(k),~,~] = compression(options.eta_SiC,p(k),H8_prime,S8_prime);
-                end
-                t(end)=T9_prime;
-                s(end)=S9_prime;
-                plot(s,t,'k','HandleVisibility','off');
-            case 6 % Line 9'-10'
-                p=linspace(P9_prime,P10_prime,n_pt);
-                t=zeros(size(p));
-                s=zeros(size(p));
-                s(1)=S9_prime;
-                t(1)=T9_prime;
-                for k=2:n_pt-1
-                    [t(k),~,s(k),~,~] = compression(options.eta_SiC,p(k),H9_prime,S9_prime);
-                end
-                t(end)=T10_prime;
-                s(end)=S10_prime;
-                plot(s,t,'k','HandleVisibility','off');
-            case 7 % Line 8'-8''
-                p=linspace(P8_prime,P8_seconde,n_pt);
-                s=linspace(S8_prime,S8_seconde,n_pt);
-                t=zeros(size(s));
-                t(1)=T8_prime;
-                for k=2:n_pt-1
-                    t(k)=XSteam('T_ps',p(k),s(k));
-                end
-                t(end)=T8_seconde;
-                plot(s,t,'k','HandleVisibility','off');
-            case 8 % Line 9'-9''
-                p=linspace(P9_prime,P9_seconde,n_pt);
-                s=linspace(S9_prime,S9_seconde,n_pt);
-                t=zeros(size(s));
-                t(1)=T9_prime;
-                for k=2:n_pt-1
-                    t(k)=XSteam('T_ps',p(k),s(k));
-                end
-                t(end)=T9_seconde;
-                plot(s,t,'k','HandleVisibility','off');
-            case 9 % Line 10'-10''
-                p=linspace(P10_prime,P10_seconde,n_pt);
-                s=linspace(S10_prime,S10_seconde,n_pt);
-                t=zeros(size(s));
-                t(1)=T10_prime;
-                for k=2:n_pt-1
-                    t(k)=XSteam('T_ps',p(k),s(k));
-                end
-                t(end)=T10_seconde;
-                plot(s,t,'k','HandleVisibility','off');
-            case 10 % Line 8''-8
-                p=linspace(P8_seconde,P8,n_pt);
-                s=linspace(S8_seconde,S8,n_pt);
-                t=zeros(size(s));
-                t(1)=T8_seconde;
-                for k=2:n_pt-1
-                    t(k)=XSteam('T_ps',p(k),s(k));
-                end
-                t(end)=T8;
-                plot(s,t,'k','HandleVisibility','off');
-            case 11 % Line 8-6
-                p=linspace(P8,P6,n_pt);
-                s=linspace(S8,S6,n_pt);
-                t=zeros(size(s));
-                t(1)=T8;
-                for k=2:n_pt-1
-                    t(k)=XSteam('T_ps',p(k),s(k));
-                end
-                t(end)=T6;
-                plot(s,t,'k','HandleVisibility','off');
-            case 12 % Line 9''-9
-                p=linspace(P9_seconde,P9,n_pt);
-                s=linspace(S9_seconde,S9,n_pt);
-                t=zeros(size(s));
-                t(1)=T9_seconde;
-                for k=2:n_pt-1
-                    t(k)=XSteam('T_ps',p(k),s(k));
-                end
-                t(end)=T9;
-                plot(s,t,'k','HandleVisibility','off');
-            case 13 % Line 10''-3
-                p=linspace(P10_seconde,P3,n_pt);
-                s=linspace(S10_seconde,S3,n_pt);
-                t=zeros(size(s));
-                t(1)=T10_seconde;
-                for k=2:n_pt-1
-                    t(k)=XSteam('T_ps',p(k),s(k));
-                end
-                t(end)=T3;
-                plot(s,t,'k','HandleVisibility','off');
-            case 14 % Line 2-8'
-                p=linspace(P2,P8_prime,n_pt);
-                s=linspace(S2,S8_prime,n_pt);
-                t=zeros(size(s));
-                t(1)=T2;
-                for k=2:n_pt-1
-                    t(k)=XSteam('T_ps',p(k),s(k));
-                end
-                t(end)=T8_prime;
-                plot(s,t,'k','HandleVisibility','off');
-            case 15 % Line 9-4
-                p=linspace(P9,P4,n_pt);
-                s=linspace(S9,S4,n_pt);
-                t=zeros(size(s));
-                t(1)=T9;
-                for k=2:n_pt-1
-                    t(k)=XSteam('T_ps',p(k),s(k));
-                end
-                t(end)=T4;
-                plot(s,t,'k','HandleVisibility','off');
-            case 16 % Line 2-7
-                p=linspace(P1,P7,n_pt);
-                s=linspace(S1,S7,n_pt);
-                t=zeros(size(s));
-                t(1)=T1;
-                for k=2:n_pt-1
-                    t(k)=XSteam('T_ps',p(k),s(k));
-                end
-                t(end)=T7;
-                plot(s,t,'k','HandleVisibility','off');
-            case 17 % Line 4-5
-                p=linspace(P4,P5,n_pt);
-                s=linspace(S4,S5,n_pt);
-                t=zeros(size(s));
-                t(1)=T4;
-                for k=2:n_pt-1
-                    t(k)=XSteam('T_ps',p(k),s(k));
-                end
-                t(end)=T5;
-                plot(s,t,'k','HandleVisibility','off');
-        end
-    end
-
-    function plot_HS(ind)
-        n_pt=100;
-        switch ind
-            case 1 % Line 1-2
-                p=linspace(P1,P2,n_pt);
-                h=zeros(size(p));
-                s=zeros(size(p));
-                s(1)=S1;
-                h(1)=H1;
-                for k=2:n_pt-1
-                    [~,h(k),s(k),~,~] = compression(options.eta_SiC,p(k),H1,S1);
-                end
-                h(end)=H2;
-                s(end)=S2;
-                plot(s,h,'k','HandleVisibility','off');
-                
-            case 2 % Line 2-8'
-                p=linspace(P2,P8_prime,n_pt);
-                s=linspace(S2,S8_prime,n_pt);
-                h=zeros(size(s));
-                h(1)=H2;
-                for k=2:n_pt-1
-                    h(k)=XSteam('h_ps',p(k),s(k));
-                end
-                h(end)=H8_prime;
-                plot(s,h,'k','HandleVisibility','off');
-                
-            case 3 % Line 8''-8
-                p=linspace(P8_seconde,P8,n_pt);
-                s=linspace(S8_seconde,S8,n_pt);
-                h=zeros(size(s));
-                h(1)=H8_seconde;
-                for k=2:n_pt-1
-                    h(k)=XSteam('h_ps',p(k),s(k));
-                end
-                h(end)=H8;
-                plot(s,h,'k','HandleVisibility','off');
-                
-            case 4 % Line 8-6
-                p=linspace(P8,P6,n_pt);
-                s=linspace(S8,S6,n_pt);
-                h=zeros(size(s));
-                h(1)=H8;
-                for k=2:n_pt-1
-                    h(k)=XSteam('h_ps',p(k),s(k));
-                end
-                h(end)=H6;
-                plot(s,h,'k','HandleVisibility','off');
-                
-            case 5 % Line 10''-3
-                p=linspace(P10_seconde,P3,n_pt);
-                s=linspace(S10_seconde,S3,n_pt);
-                h=zeros(size(s));
-                h(1)=H10_seconde;
-                for k=2:n_pt-1
-                    h(k)=XSteam('h_ps',p(k),s(k));
-                end
-                h(end)=H3;
-                plot(s,h,'k','HandleVisibility','off');
-                
-            case 6 % Line 8'-9'
-                p=linspace(P8_prime,P9_prime,n_pt);
-                h=zeros(size(p));
-                s=zeros(size(p));
-                s(1)=S8_prime;
-                h(1)=H8_prime;
-                for k=2:n_pt-1
-                    [~,h(k),s(k),~,~] = compression(options.eta_SiC,p(k),H8_prime,S8_prime);
-                end
-                h(end)=H9_prime;
-                s(end)=S9_prime;
-                plot(s,h,'k','HandleVisibility','off');
-                
-            case 7 % Line 9'-10'
-                p=linspace(P9_prime,P10_prime,n_pt);
-                h=zeros(size(p));
-                s=zeros(size(p));
-                s(1)=S9_prime;
-                h(1)=H9_prime;
-                for k=2:n_pt-1
-                    [~,h(k),s(k),~,~] = compression(options.eta_SiC,p(k),H9_prime,S9_prime);
-                end
-                h(end)=H10_prime;
-                s(end)=S10_prime;
-                plot(s,h,'k','HandleVisibility','off');
-                
-            case 8 % Line 8'-8''
-                p=linspace(P8_prime,P8_seconde,n_pt);
-                s=linspace(S8_prime,S8_seconde,n_pt);
-                h=zeros(size(s));
-                h(1)=H8_prime;
-                for k=2:n_pt-1
-                    h(k)=XSteam('h_ps',p(k),s(k));
-                end
-                h(end)=H8_seconde;
-                plot(s,h,'k','HandleVisibility','off');
-                
-            case 9 % Line 9'-9''
-                p=linspace(P9_prime,P9_seconde,n_pt);
-                s=linspace(S9_prime,S9_seconde,n_pt);
-                h=zeros(size(s));
-                h(1)=H9_prime;
-                for k=2:n_pt-1
-                    h(k)=XSteam('h_ps',p(k),s(k));
-                end
-                h(end)=H9_seconde;
-                plot(s,h,'k','HandleVisibility','off');
-                
-            case 10 % Line 10'-10''
-                p=linspace(P10_prime,P10_seconde,n_pt);
-                s=linspace(S10_prime,S10_seconde,n_pt);
-                h=zeros(size(s));
-                h(1)=H10_prime;
-                for k=2:n_pt-1
-                    h(k)=XSteam('h_ps',p(k),s(k));
-                end
-                h(end)=H10_seconde;
-                plot(s,h,'k','HandleVisibility','off');
-                
-            case 11 %3-4
-                p=linspace(P3,P4,n_pt);
-                h=zeros(size(p));
-                s=zeros(size(p));
-                s(1)=S3;
-                h(1)=H3;
-                for k=2:n_pt-1
-                    [~,h(k),s(k),~,~] = detente(options.eta_SiT,p(k),H3,S3);
-                end
-                h(end)=H4;
-                s(end)=S4;
-                plot(s,h,'k','HandleVisibility','off');
-                
-            case 12 %5-6
-                p=linspace(P5,P6,n_pt);
-                h=zeros(size(p));
-                s=zeros(size(p));
-                s(1)=S5;
-                h(1)=H5;
-                for k=2:n_pt-1
-                    [~,h(k),s(k),~,~] = detente(options.eta_SiT,p(k),H5,S5);
-                end
-                h(end)=H6;
-                s(end)=S6;
-                plot(s,h,'k','HandleVisibility','off');
-            case 13 %6-7
-                p=linspace(P6,P7,n_pt);
-                h=zeros(size(p));
-                s=zeros(size(p));
-                s(1)=S6;
-                h(1)=H6;
-                for k=2:n_pt-1
-                    [~,h(k),s(k),~,~] = detente(options.eta_SiT,p(k),H6,S6);
-                end
-                h(end)=H7;
-                s(end)=S7;
-                plot(s,h,'k','HandleVisibility','off');
-            case 14 %9''-9
-                p=linspace(P9_seconde,P9,n_pt);
-                s=linspace(S9_seconde,S9,n_pt);
-                h=zeros(size(s));
-                h(1)=H9_seconde;
-                for k=2:n_pt-1
-                    h(k)=XSteam('h_ps',p(k),s(k));
-                end
-                h(end)=H9;
-                plot(s,h,'k','HandleVisibility','off');
-            case 15 %9-4
-                p=linspace(P9,P4,n_pt);
-                s=linspace(S9,S4,n_pt);
-                h=zeros(size(s));
-                h(1)=H9;
-                for k=2:n_pt-1
-                    h(k)=XSteam('h_ps',p(k),s(k));
-                end
-                h(end)=H4;
-                plot(s,h,'k','HandleVisibility','off');
-            case 16 %2-7
-                p=linspace(P2,P7,n_pt);
-                s=linspace(S2,S7,n_pt);
-                h=zeros(size(s));
-                h(1)=H2;
-                for k=2:n_pt-1
-                    h(k)=XSteam('h_ps',p(k),s(k));
-                end
-                h(end)=H7;
-                plot(s,h,'k','HandleVisibility','off');
-            case 17 %4-5
-                p=linspace(P4,P5,n_pt);
-                s=linspace(S4,S5,n_pt);
-                h=zeros(size(s));
-                h(1)=H4;
-                for k=2:n_pt-1
-                    h(k)=XSteam('h_ps',p(k),s(k));
-                end
-                h(end)=H5;
-                plot(s,h,'k','HandleVisibility','off');
-        end
-    end
+%     function plot_TS(ind)
+%         n_pt=100;
+%         switch ind
+%             case 1 % Line 1-2
+%                 p=linspace(P1,P2,n_pt);
+%                 t=zeros(size(p));
+%                 s=zeros(size(p));
+%                 s(1)=S1;
+%                 t(1)=T1;
+%                 for k=2:n_pt-1
+%                     [t(k),~,s(k),~,~] = compression(options.eta_SiC,p(k),H1,S1);
+%                 end
+%                 t(end)=T2;
+%                 s(end)=S2;
+%                 plot(s,t,'k','HandleVisibility','off');
+%             case 2 % Line 3-4
+%                 n_pt=4*n_pt;
+%                 p=linspace(P3,P4,n_pt);
+%                 s=zeros(size(p));
+%                 t=zeros(size(p));
+%                 t(1)=T3;
+%                 s(1)=S3;
+%                 for k=2:n_pt-1
+%                     [t(k),~,s(k),~] = expan_inter(options.eta_SiT,H4,H3,S3);
+%                 end
+%                 t(end)=T4;
+%                 s(end)=S4;
+%                 plot(s,t,'k','HandleVisibility','off');
+%             case 3 % Line 5-6
+%                 n_pt=4*n_pt;
+%                 p=linspace(P5,P6,n_pt);
+%                 s=zeros(size(p));
+%                 t=zeros(size(p));
+%                 t(1)=T5;
+%                 s(1)=S5;
+%                 for k=2:n_pt-1
+%                     [t(k),~,s(k),~] = expan_inter(options.eta_SiT,H6,H5,S5);
+%                 end
+%                 t(end)=T6;
+%                 s(end)=S6;
+%                 plot(s,t,'k','HandleVisibility','off');
+%             case 4 % Line 6-7
+%                 n_pt=4*n_pt;
+%                 p=linspace(P6,P7,n_pt);
+%                 s=zeros(size(p));
+%                 t=zeros(size(p));
+%                 t(1)=T6;
+%                 s(1)=S6;
+%                 for k=2:n_pt-1
+%                     [t(k),~,s(k),~] = expan_inter(options.eta_SiT,H7,H6,S6);
+%                 end
+%                 t(end)=T7;
+%                 s(end)=S7;
+%                 plot(s,t,'k','HandleVisibility','off');
+%             case 5 % Line 8'-9'
+%                 p=linspace(P8_prime,P9_prime,n_pt);
+%                 t=zeros(size(p));
+%                 s=zeros(size(p));
+%                 s(1)=S8_prime;
+%                 t(1)=T8_prime;
+%                 for k=2:n_pt-1
+%                     [t(k),~,s(k),~,~] = compression(options.eta_SiC,p(k),H8_prime,S8_prime);
+%                 end
+%                 t(end)=T9_prime;
+%                 s(end)=S9_prime;
+%                 plot(s,t,'k','HandleVisibility','off');
+%             case 6 % Line 9'-10'
+%                 p=linspace(P9_prime,P10_prime,n_pt);
+%                 t=zeros(size(p));
+%                 s=zeros(size(p));
+%                 s(1)=S9_prime;
+%                 t(1)=T9_prime;
+%                 for k=2:n_pt-1
+%                     [t(k),~,s(k),~,~] = compression(options.eta_SiC,p(k),H9_prime,S9_prime);
+%                 end
+%                 t(end)=T10_prime;
+%                 s(end)=S10_prime;
+%                 plot(s,t,'k','HandleVisibility','off');
+%             case 7 % Line 8'-8''
+%                 p=linspace(P8_prime,P8_seconde,n_pt);
+%                 s=linspace(S8_prime,S8_seconde,n_pt);
+%                 t=zeros(size(s));
+%                 t(1)=T8_prime;
+%                 for k=2:n_pt-1
+%                     t(k)=XSteam('T_ps',p(k),s(k));
+%                 end
+%                 t(end)=T8_seconde;
+%                 plot(s,t,'k','HandleVisibility','off');
+%             case 8 % Line 9'-9''
+%                 p=linspace(P9_prime,P9_seconde,n_pt);
+%                 s=linspace(S9_prime,S9_seconde,n_pt);
+%                 t=zeros(size(s));
+%                 t(1)=T9_prime;
+%                 for k=2:n_pt-1
+%                     t(k)=XSteam('T_ps',p(k),s(k));
+%                 end
+%                 t(end)=T9_seconde;
+%                 plot(s,t,'k','HandleVisibility','off');
+%             case 9 % Line 10'-10''
+%                 p=linspace(P10_prime,P10_seconde,n_pt);
+%                 s=linspace(S10_prime,S10_seconde,n_pt);
+%                 t=zeros(size(s));
+%                 t(1)=T10_prime;
+%                 for k=2:n_pt-1
+%                     t(k)=XSteam('T_ps',p(k),s(k));
+%                 end
+%                 t(end)=T10_seconde;
+%                 plot(s,t,'k','HandleVisibility','off');
+%             case 10 % Line 8''-8
+%                 p=linspace(P8_seconde,P8,n_pt);
+%                 s=linspace(S8_seconde,S8,n_pt);
+%                 t=zeros(size(s));
+%                 t(1)=T8_seconde;
+%                 for k=2:n_pt-1
+%                     t(k)=XSteam('T_ps',p(k),s(k));
+%                 end
+%                 t(end)=T8;
+%                 plot(s,t,'k','HandleVisibility','off');
+%             case 11 % Line 8-6
+%                 p=linspace(P8,P6,n_pt);
+%                 s=linspace(S8,S6,n_pt);
+%                 t=zeros(size(s));
+%                 t(1)=T8;
+%                 for k=2:n_pt-1
+%                     t(k)=XSteam('T_ps',p(k),s(k));
+%                 end
+%                 t(end)=T6;
+%                 plot(s,t,'k','HandleVisibility','off');
+%             case 12 % Line 9''-9
+%                 p=linspace(P9_seconde,P9,n_pt);
+%                 s=linspace(S9_seconde,S9,n_pt);
+%                 t=zeros(size(s));
+%                 t(1)=T9_seconde;
+%                 for k=2:n_pt-1
+%                     t(k)=XSteam('T_ps',p(k),s(k));
+%                 end
+%                 t(end)=T9;
+%                 plot(s,t,'k','HandleVisibility','off');
+%             case 13 % Line 10''-3
+%                 p=linspace(P10_seconde,P3,n_pt);
+%                 s=linspace(S10_seconde,S3,n_pt);
+%                 t=zeros(size(s));
+%                 t(1)=T10_seconde;
+%                 for k=2:n_pt-1
+%                     t(k)=XSteam('T_ps',p(k),s(k));
+%                 end
+%                 t(end)=T3;
+%                 plot(s,t,'k','HandleVisibility','off');
+%             case 14 % Line 2-8'
+%                 p=linspace(P2,P8_prime,n_pt);
+%                 s=linspace(S2,S8_prime,n_pt);
+%                 t=zeros(size(s));
+%                 t(1)=T2;
+%                 for k=2:n_pt-1
+%                     t(k)=XSteam('T_ps',p(k),s(k));
+%                 end
+%                 t(end)=T8_prime;
+%                 plot(s,t,'k','HandleVisibility','off');
+%             case 15 % Line 9-4
+%                 p=linspace(P9,P4,n_pt);
+%                 s=linspace(S9,S4,n_pt);
+%                 t=zeros(size(s));
+%                 t(1)=T9;
+%                 for k=2:n_pt-1
+%                     t(k)=XSteam('T_ps',p(k),s(k));
+%                 end
+%                 t(end)=T4;
+%                 plot(s,t,'k','HandleVisibility','off');
+%             case 16 % Line 2-7
+%                 p=linspace(P1,P7,n_pt);
+%                 s=linspace(S1,S7,n_pt);
+%                 t=zeros(size(s));
+%                 t(1)=T1;
+%                 for k=2:n_pt-1
+%                     t(k)=XSteam('T_ps',p(k),s(k));
+%                 end
+%                 t(end)=T7;
+%                 plot(s,t,'k','HandleVisibility','off');
+%             case 17 % Line 4-5
+%                 p=linspace(P4,P5,n_pt);
+%                 s=linspace(S4,S5,n_pt);
+%                 t=zeros(size(s));
+%                 t(1)=T4;
+%                 for k=2:n_pt-1
+%                     t(k)=XSteam('T_ps',p(k),s(k));
+%                 end
+%                 t(end)=T5;
+%                 plot(s,t,'k','HandleVisibility','off');
+%         end
+%     end
+% 
+%     function plot_HS(ind)
+%         n_pt=100;
+%         switch ind
+%             case 1 % Line 1-2
+%                 p=linspace(P1,P2,n_pt);
+%                 h=zeros(size(p));
+%                 s=zeros(size(p));
+%                 s(1)=S1;
+%                 h(1)=H1;
+%                 for k=2:n_pt-1
+%                     [~,h(k),s(k),~,~] = compression(options.eta_SiC,p(k),H1,S1);
+%                 end
+%                 h(end)=H2;
+%                 s(end)=S2;
+%                 plot(s,h,'k','HandleVisibility','off');
+%                 
+%             case 2 % Line 2-8'
+%                 p=linspace(P2,P8_prime,n_pt);
+%                 s=linspace(S2,S8_prime,n_pt);
+%                 h=zeros(size(s));
+%                 h(1)=H2;
+%                 for k=2:n_pt-1
+%                     h(k)=XSteam('h_ps',p(k),s(k));
+%                 end
+%                 h(end)=H8_prime;
+%                 plot(s,h,'k','HandleVisibility','off');
+%                 
+%             case 3 % Line 8''-8
+%                 p=linspace(P8_seconde,P8,n_pt);
+%                 s=linspace(S8_seconde,S8,n_pt);
+%                 h=zeros(size(s));
+%                 h(1)=H8_seconde;
+%                 for k=2:n_pt-1
+%                     h(k)=XSteam('h_ps',p(k),s(k));
+%                 end
+%                 h(end)=H8;
+%                 plot(s,h,'k','HandleVisibility','off');
+%                 
+%             case 4 % Line 8-6
+%                 p=linspace(P8,P6,n_pt);
+%                 s=linspace(S8,S6,n_pt);
+%                 h=zeros(size(s));
+%                 h(1)=H8;
+%                 for k=2:n_pt-1
+%                     h(k)=XSteam('h_ps',p(k),s(k));
+%                 end
+%                 h(end)=H6;
+%                 plot(s,h,'k','HandleVisibility','off');
+%                 
+%             case 5 % Line 10''-3
+%                 p=linspace(P10_seconde,P3,n_pt);
+%                 s=linspace(S10_seconde,S3,n_pt);
+%                 h=zeros(size(s));
+%                 h(1)=H10_seconde;
+%                 for k=2:n_pt-1
+%                     h(k)=XSteam('h_ps',p(k),s(k));
+%                 end
+%                 h(end)=H3;
+%                 plot(s,h,'k','HandleVisibility','off');
+%                 
+%             case 6 % Line 8'-9'
+%                 p=linspace(P8_prime,P9_prime,n_pt);
+%                 h=zeros(size(p));
+%                 s=zeros(size(p));
+%                 s(1)=S8_prime;
+%                 h(1)=H8_prime;
+%                 for k=2:n_pt-1
+%                     [~,h(k),s(k),~,~] = compression(options.eta_SiC,p(k),H8_prime,S8_prime);
+%                 end
+%                 h(end)=H9_prime;
+%                 s(end)=S9_prime;
+%                 plot(s,h,'k','HandleVisibility','off');
+%                 
+%             case 7 % Line 9'-10'
+%                 p=linspace(P9_prime,P10_prime,n_pt);
+%                 h=zeros(size(p));
+%                 s=zeros(size(p));
+%                 s(1)=S9_prime;
+%                 h(1)=H9_prime;
+%                 for k=2:n_pt-1
+%                     [~,h(k),s(k),~,~] = compression(options.eta_SiC,p(k),H9_prime,S9_prime);
+%                 end
+%                 h(end)=H10_prime;
+%                 s(end)=S10_prime;
+%                 plot(s,h,'k','HandleVisibility','off');
+%                 
+%             case 8 % Line 8'-8''
+%                 p=linspace(P8_prime,P8_seconde,n_pt);
+%                 s=linspace(S8_prime,S8_seconde,n_pt);
+%                 h=zeros(size(s));
+%                 h(1)=H8_prime;
+%                 for k=2:n_pt-1
+%                     h(k)=XSteam('h_ps',p(k),s(k));
+%                 end
+%                 h(end)=H8_seconde;
+%                 plot(s,h,'k','HandleVisibility','off');
+%                 
+%             case 9 % Line 9'-9''
+%                 p=linspace(P9_prime,P9_seconde,n_pt);
+%                 s=linspace(S9_prime,S9_seconde,n_pt);
+%                 h=zeros(size(s));
+%                 h(1)=H9_prime;
+%                 for k=2:n_pt-1
+%                     h(k)=XSteam('h_ps',p(k),s(k));
+%                 end
+%                 h(end)=H9_seconde;
+%                 plot(s,h,'k','HandleVisibility','off');
+%                 
+%             case 10 % Line 10'-10''
+%                 p=linspace(P10_prime,P10_seconde,n_pt);
+%                 s=linspace(S10_prime,S10_seconde,n_pt);
+%                 h=zeros(size(s));
+%                 h(1)=H10_prime;
+%                 for k=2:n_pt-1
+%                     h(k)=XSteam('h_ps',p(k),s(k));
+%                 end
+%                 h(end)=H10_seconde;
+%                 plot(s,h,'k','HandleVisibility','off');
+%                 
+%             case 11 %3-4
+%                 p=linspace(P3,P4,n_pt);
+%                 h=zeros(size(p));
+%                 s=zeros(size(p));
+%                 s(1)=S3;
+%                 h(1)=H3;
+%                 for k=2:n_pt-1
+%                     [~,h(k),s(k),~,~] = detente(options.eta_SiT,p(k),H3,S3);
+%                 end
+%                 h(end)=H4;
+%                 s(end)=S4;
+%                 plot(s,h,'k','HandleVisibility','off');
+%                 
+%             case 12 %5-6
+%                 p=linspace(P5,P6,n_pt);
+%                 h=zeros(size(p));
+%                 s=zeros(size(p));
+%                 s(1)=S5;
+%                 h(1)=H5;
+%                 for k=2:n_pt-1
+%                     [~,h(k),s(k),~,~] = detente(options.eta_SiT,p(k),H5,S5);
+%                 end
+%                 h(end)=H6;
+%                 s(end)=S6;
+%                 plot(s,h,'k','HandleVisibility','off');
+%             case 13 %6-7
+%                 p=linspace(P6,P7,n_pt);
+%                 h=zeros(size(p));
+%                 s=zeros(size(p));
+%                 s(1)=S6;
+%                 h(1)=H6;
+%                 for k=2:n_pt-1
+%                     [~,h(k),s(k),~,~] = detente(options.eta_SiT,p(k),H6,S6);
+%                 end
+%                 h(end)=H7;
+%                 s(end)=S7;
+%                 plot(s,h,'k','HandleVisibility','off');
+%             case 14 %9''-9
+%                 p=linspace(P9_seconde,P9,n_pt);
+%                 s=linspace(S9_seconde,S9,n_pt);
+%                 h=zeros(size(s));
+%                 h(1)=H9_seconde;
+%                 for k=2:n_pt-1
+%                     h(k)=XSteam('h_ps',p(k),s(k));
+%                 end
+%                 h(end)=H9;
+%                 plot(s,h,'k','HandleVisibility','off');
+%             case 15 %9-4
+%                 p=linspace(P9,P4,n_pt);
+%                 s=linspace(S9,S4,n_pt);
+%                 h=zeros(size(s));
+%                 h(1)=H9;
+%                 for k=2:n_pt-1
+%                     h(k)=XSteam('h_ps',p(k),s(k));
+%                 end
+%                 h(end)=H4;
+%                 plot(s,h,'k','HandleVisibility','off');
+%             case 16 %2-7
+%                 p=linspace(P2,P7,n_pt);
+%                 s=linspace(S2,S7,n_pt);
+%                 h=zeros(size(s));
+%                 h(1)=H2;
+%                 for k=2:n_pt-1
+%                     h(k)=XSteam('h_ps',p(k),s(k));
+%                 end
+%                 h(end)=H7;
+%                 plot(s,h,'k','HandleVisibility','off');
+%             case 17 %4-5
+%                 p=linspace(P4,P5,n_pt);
+%                 s=linspace(S4,S5,n_pt);
+%                 h=zeros(size(s));
+%                 h(1)=H4;
+%                 for k=2:n_pt-1
+%                     h(k)=XSteam('h_ps',p(k),s(k));
+%                 end
+%                 h(end)=H5;
+%                 plot(s,h,'k','HandleVisibility','off');
+%         end
+%     end
 
 
 end

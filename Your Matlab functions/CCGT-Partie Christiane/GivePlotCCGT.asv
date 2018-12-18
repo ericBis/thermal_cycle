@@ -1,0 +1,34 @@
+%%%CHANGEMENT%%%
+%r - kcc - kmeca - P_e - T_0 - T_3 - eta_PiC - eta_PiT
+%T0 - T_STmax - eta_mec - pdrum - pmid - x7 - eta_SiC - eta_SiT
+%Parametres à faire varier sont: pmid puis pdrum tel que pdrum < pmid =>
+%influence sur le rdt ST exerg (tqt on ait un titre acceptable et déterminer à partir de quel titre c'est pas acceptable)
+%Puis pour cette plage faire varier les pressions pour voir comment varier
+%le rdt STex et totex 
+%
+%Pour varier la température du condenseur et ses conséquence sur les rdt ST
+%exerg et totex et pie chart
+%
+%Faire varier les parametres (r,kcc,P_e, etaPiC,etaPit) de la GT qui influencerai la chaudiere.
+%Faire 2 puis plus de paramètres et voir les conséquences sur la chaudière
+%
+function GivePlotCCGT()
+variation_R=(1:0.5:20);
+longeurVecteur=length(variation_R);
+valeur_RdtExergST=variation_R;%preallocation
+valeur_RdtExergTotCCGT=variation_R;%preallocation
+P_eg = 225e3; %[kW]
+display=0;
+for i=1:longeurVecteur
+
+          options.pdrum=4; %[bar]:Drum pressure
+
+    variation_R(i)
+    
+    
+    [ETA MASSFLOW] = CCGT3P(P_eg,options,display);
+    valeur_RdtExergST=;
+    valeur_RdtExergTotCCGT=;
+end
+
+end
