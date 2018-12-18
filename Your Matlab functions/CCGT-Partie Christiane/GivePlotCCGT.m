@@ -17,9 +17,7 @@ function GivePlotCCGT()
 %VARIATION DU DRUM
 variation_PDRUM=(1:0.5:4);
 longeurVecteur=length(variation_PDRUM);
-valeur_RdtExergST=variation_PDRUM;%preallocation
 valeur_RdtEnergTotCCGT=variation_PDRUM;%preallocation
-valeur_RdtEnergST=variation_PDRUM;%preallocation
 valeur_RdtExergTotCCGT=variation_PDRUM;%preallocation
 
 for i=1:longeurVecteur
@@ -28,20 +26,14 @@ for i=1:longeurVecteur
     options=struct;
     options.pdrum=variation_PDRUM(i); %[bar]:Drum pressure
     [ETA,~,~] = CCGT(P_eg,options,display);
-    valeur_RdtEnergST(i)=ETA(1);
-    valeur_RdtExergST(i)=ETA(4);
     valeur_RdtEnergTotCCGT(i)=ETA(3);
     valeur_RdtExergTotCCGT(i)=ETA(6);
 end
+RDT_ENERG_MAX_PDRUM_CCGT=valeur_RdtEnergTotCCGT(end);%rdt quand pdrum=4
+RDT_EXERG_MAX_PDRUM_CCGT=valeur_RdtExergTotCCGT(end);%rdt quand pdrum=4
+
 figure(1)
 subplot(1,2,1);
-plot(variation_PDRUM,valeur_RdtEnergST,'--',variation_PDRUM,valeur_RdtExergST,':');
-xlabel('pdrum');
-ylabel('rendement');
-legend('rdt energ. ST','rdt exerg. ST');
-title('ST dans CCGT');
-
-subplot(1,2,2);
 plot(variation_PDRUM,valeur_RdtEnergTotCCGT,'--',variation_PDRUM,valeur_RdtExergTotCCGT,':');
 xlabel('pdrum');
 ylabel('rendement');
@@ -52,9 +44,7 @@ title('CCGT');
 %VARIATION DU MID
 variation_PMID=(20:0.5:28);
 longeurVecteur=length(variation_PMID);
-valeur_RdtExergST=variation_PMID;%preallocation
 valeur_RdtEnergTotCCGT=variation_PMID;%preallocation
-valeur_RdtEnergST=variation_PMID;%preallocation
 valeur_RdtExergTotCCGT=variation_PMID;%preallocation
 
 for i=1:longeurVecteur
@@ -63,23 +53,45 @@ for i=1:longeurVecteur
     options=struct;
     options.pmid=variation_PMID(i); %[bar]:Drum pressure
     [ETA,~,~] = CCGT(P_eg,options,display);
-    valeur_RdtEnergST(i)=ETA(1);
-    valeur_RdtExergST(i)=ETA(4);
     valeur_RdtEnergTotCCGT(i)=ETA(3);
     valeur_RdtExergTotCCGT(i)=ETA(6);
 end
-figure(2)
-subplot(1,2,1);
-plot(variation_PMID,valeur_RdtEnergST,'--',variation_PMID,valeur_RdtExergST,':');
-xlabel('pmid');
-ylabel('rendement');
-legend('rdt energ. ST','rdt exerg. ST');
-title('ST dans CCGT');
-
+RDT_ENERG_MAX_PDRUM_CCGT;
+RDT_EXERG_MAX_PDRUM_CCGT;
+RDT_ENERG_MAX_PMID_CCGT=valeur_RdtEnergTotCCGT(1);
+RDT_EXERG_MAX_PMID_CCGT=valeur_RdtExergTotCCGT(1);
+RDT_ENERG_MIN_PMID_CCGT=valeur_RdtEnergTotCCGT(end);
+RDT_EXERG_MIN_PMID_CCGT=valeur_RdtExergTotCCGT(end);
 subplot(1,2,2);
 plot(variation_PMID,valeur_RdtEnergTotCCGT,'--',variation_PMID,valeur_RdtExergTotCCGT,':');
 xlabel('pmid');
 ylabel('rendement');
 legend('rdt energ. CCGT','rdt exerg. CCGT');
 title('CCGT');
+% %%%Pour une valeur de pdrum=4bar et pmid=28bar
+% RDT_ENERG_MAX_PDRUM_CCGT=0.5445
+% RDT_EXERG_MAX_PDRUM_CCGT=0.5230
+
+
+% %%%Pour une valeur de pmid=20bar et pdrum=4
+% RDT_ENERG_MAX_PDRUM_CCGT=0.5541
+% RDT_EXERG_MAX_PDRUM_CCGT=0.5322
+% si pmid=28bar
+% RDT_ENERG_MIN_PMID_CCGT=0.5445
+% RDT_EXERG_MIN_PMID_CCGT=0.5230
+
+% %%%Pour une valeur de pdrum=4bar et pmid=20bar
+% 
+
+%VARIATION POUR DES VALEUR PRDUM ET PMID QUI MAXIMISE RDT_TOT_EX
+    P_eg = 225e3; %[kW]
+    display=0;
+    options=struct;
+    options.pdrum=4;
+    options.pmid=20; %[bar]:Drum pressure
+    [ETA,~,~] = CCGT(P_eg,options,display);
+    valeur_RdtEnergTotCCGT=ETA(3)
+    valeur_RdtExergTotCCGT=ETA(6)
+    
+    
 end
