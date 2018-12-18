@@ -1,10 +1,6 @@
 %%%CHANGEMENT%%%
 %r - kcc - kmeca - P_e - T_0 - T_3 - eta_PiC - eta_PiT
 %T0 - T_STmax - eta_mec - pdrum - pmid - x7 - eta_SiC - eta_SiT
-%Parametres à faire varier sont: pmid puis pdrum tel que pdrum < pmid =>
-%influence sur le rdt ST exerg (tqt on ait un titre acceptable et déterminer à partir de quel titre c'est pas acceptable)
-%Puis pour cette plage faire varier les pressions pour voir comment varier
-%le rdt STex et totex 
 %
 %Pour varier la température du condenseur et ses conséquence sur les rdt ST
 %exerg et totex et pie chart
@@ -81,7 +77,8 @@ title('CCGT');
 % RDT_EXERG_MIN_PMID_CCGT=0.5230
 
 % %%%Pour une valeur de pdrum=4bar et pmid=20bar
-% 
+%     valeur_RdtEnergTotCCGT=0.5541
+%     valeur_RdtExergTotCCGT=0.5322 => augmenter pdrum et reduire pmid
 
 %VARIATION POUR DES VALEUR PRDUM ET PMID QUI MAXIMISE RDT_TOT_EX
     P_eg = 225e3; %[kW]
@@ -93,5 +90,6 @@ title('CCGT');
     valeur_RdtEnergTotCCGT=ETA(3)
     valeur_RdtExergTotCCGT=ETA(6)
     
+
     
 end
