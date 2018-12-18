@@ -13,12 +13,7 @@
 %Faire 2 puis plus de paramètres et voir les conséquences sur la chaudière
 %
 function GivePlotCCGT()
-fPdrum();
-fPmid();
 
-end
-
-function fPdrum()
 %VARIATION DU DRUM
 variation_PDRUM=(1:0.5:4);
 longeurVecteur=length(variation_PDRUM);
@@ -39,21 +34,21 @@ for i=1:longeurVecteur
     valeur_RdtExergTotCCGT(i)=ETA(6);
 end
 figure(1)
+subplot(1,2,1);
 plot(variation_PDRUM,valeur_RdtEnergST,'--',variation_PDRUM,valeur_RdtExergST,':');
 xlabel('pdrum');
 ylabel('rendement');
-legend('rdt energ.','rdt exerg.');
+legend('rdt energ. ST','rdt exerg. ST');
 title('ST dans CCGT');
 
-figure(2)
+subplot(1,2,2);
 plot(variation_PDRUM,valeur_RdtEnergTotCCGT,'--',variation_PDRUM,valeur_RdtExergTotCCGT,':');
 xlabel('pdrum');
 ylabel('rendement');
-legend('rdt energ.','rdt exerg.');
+legend('rdt energ. CCGT','rdt exerg.CCGT');
 title('CCGT');
 
-end
-function fPmid()
+
 %VARIATION DU MID
 variation_PMID=(20:0.5:28);
 longeurVecteur=length(variation_PMID);
@@ -66,24 +61,25 @@ for i=1:longeurVecteur
     P_eg = 225e3; %[kW]
     display=0;
     options=struct;
-    options.pdrum=variation_PMID(i); %[bar]:Drum pressure
+    options.pmid=variation_PMID(i); %[bar]:Drum pressure
     [ETA,~,~] = CCGT(P_eg,options,display);
     valeur_RdtEnergST(i)=ETA(1);
     valeur_RdtExergST(i)=ETA(4);
     valeur_RdtEnergTotCCGT(i)=ETA(3);
     valeur_RdtExergTotCCGT(i)=ETA(6);
 end
-figure(3)
+figure(2)
+subplot(1,2,1);
 plot(variation_PMID,valeur_RdtEnergST,'--',variation_PMID,valeur_RdtExergST,':');
 xlabel('pmid');
 ylabel('rendement');
-legend('rdt energ.','rdt exerg.');
+legend('rdt energ. ST','rdt exerg. ST');
 title('ST dans CCGT');
 
-figure(4)
+subplot(1,2,2);
 plot(variation_PMID,valeur_RdtEnergTotCCGT,'--',variation_PMID,valeur_RdtExergTotCCGT,':');
 xlabel('pmid');
 ylabel('rendement');
-legend('rdt energ.','rdt exerg.');
+legend('rdt energ. CCGT','rdt exerg. CCGT');
 title('CCGT');
 end
