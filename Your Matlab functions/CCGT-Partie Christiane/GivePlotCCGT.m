@@ -13,12 +13,20 @@
 %Faire 2 puis plus de paramètres et voir les conséquences sur la chaudière
 %
 function GivePlotCCGT()
-variation_PDRUM=(1:0.5:10);
+fPdrum();
+fPmid();
+
+end
+
+function fPdrum()
+%VARIATION DU DRUM
+variation_PDRUM=(1:0.5:4);
 longeurVecteur=length(variation_PDRUM);
 valeur_RdtExergST=variation_PDRUM;%preallocation
 valeur_RdtEnergTotCCGT=variation_PDRUM;%preallocation
 valeur_RdtEnergST=variation_PDRUM;%preallocation
 valeur_RdtExergTotCCGT=variation_PDRUM;%preallocation
+
 for i=1:longeurVecteur
     P_eg = 225e3; %[kW]
     display=0;
@@ -30,10 +38,51 @@ for i=1:longeurVecteur
     valeur_RdtEnergTotCCGT(i)=ETA(3);
     valeur_RdtExergTotCCGT(i)=ETA(6);
 end
-figure()
-hold on
-plot(variation_PDRUM,valeur_RdtEnergST,valeur_RdtExergST);
+figure(1)
+plot(variation_PDRUM,valeur_RdtEnergST,'--',variation_PDRUM,valeur_RdtExergST,':');
 xlabel('pdrum');
+ylabel('rendement');
+legend('rdt energ.','rdt exerg.');
+title('ST dans CCGT');
+
+figure(2)
+plot(variation_PDRUM,valeur_RdtEnergTotCCGT,'--',variation_PDRUM,valeur_RdtExergTotCCGT,':');
+xlabel('pdrum');
+ylabel('rendement');
+legend('rdt energ.','rdt exerg.');
+title('CCGT');
+
+end
+function fPmid()
+%VARIATION DU MID
+variation_PMID=(20:0.5:28);
+longeurVecteur=length(variation_PMID);
+valeur_RdtExergST=variation_PMID;%preallocation
+valeur_RdtEnergTotCCGT=variation_PMID;%preallocation
+valeur_RdtEnergST=variation_PMID;%preallocation
+valeur_RdtExergTotCCGT=variation_PMID;%preallocation
+
+for i=1:longeurVecteur
+    P_eg = 225e3; %[kW]
+    display=0;
+    options=struct;
+    options.pdrum=variation_PMID(i); %[bar]:Drum pressure
+    [ETA,~,~] = CCGT(P_eg,options,display);
+    valeur_RdtEnergST(i)=ETA(1);
+    valeur_RdtExergST(i)=ETA(4);
+    valeur_RdtEnergTotCCGT(i)=ETA(3);
+    valeur_RdtExergTotCCGT(i)=ETA(6);
+end
+figure(3)
+plot(variation_PMID,valeur_RdtEnergST,'--',variation_PMID,valeur_RdtExergST,':');
+xlabel('pmid');
+ylabel('rendement');
+legend('rdt energ.','rdt exerg.');
+title('ST dans CCGT');
+
+figure(4)
+plot(variation_PMID,valeur_RdtEnergTotCCGT,'--',variation_PMID,valeur_RdtExergTotCCGT,':');
+xlabel('pmid');
 ylabel('rendement');
 legend('rdt energ.','rdt exerg.');
 title('CCGT');

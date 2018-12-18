@@ -438,19 +438,19 @@ if options.GraphCompute==1
 %         plot_HS(i);
 %     end
     
-    %%%%PIE CHART EXERG%%%%
-    FIG(3)=figure('visible',disp);
-    dataExerg = [IrrevExergCombustion,IrrevExergTransfThermique,PerteExergCheminee,IrrevComplexeRotoriqueCCGT,PerteExergCondenseur,PerteMecaCCGT,PuissanceEffectiveST,PuissanceEffectiveGT]*(10^(-3));
-    labelsExerg = {strcat('Irrev. comb.:',num2str(dataExerg(1)),'MW'),strcat('Irrev. transf.:',num2str(dataExerg(2)),'MW'),strcat('Perte cheminee:',num2str(dataExerg(3)),'MW'),strcat('Irrev. rotor CCGT:',num2str(dataExerg(4)),'MW'),strcat('Perte condenseur:',num2str(dataExerg(5)),'MW'),strcat('Perte meca CCGT:',num2str(dataExerg(6)),'MW'),strcat('Puiss. TV:',num2str(dataExerg(7)),'MW'),strcat('Puiss. TG:',num2str(dataExerg(8)),'MW')};
-    pie(dataExerg,labelsExerg);
-    title(strcat('Puiss. exergétique primaire:',num2str(PuissanceExergPrimaire*(10^(-3))),'MW'));
-    
-    %%%%PIE CHART ENERG%%%%
-    FIG(4)=figure('visible',disp);
-    dataEnerg = [PerteEnergCheminee,PerteEnergCondenseur,PerteMecaCCGT,PuissanceEffectiveST,PuissanceEffectiveGT]*(10^(-3));
-    labelsEnerg = {strcat('Perte cheminee:',num2str(dataEnerg(1)),'MW'),strcat('Perte condenseur:',num2str(dataEnerg(2)),'MW'),strcat('Perte meca CCGT:',num2str(dataEnerg(3)),'MW'),strcat('Puiss. TV:',num2str(dataEnerg(4)),'MW'),strcat('Puiss. TG:',num2str(dataEnerg(5)),'MW')};
-    pie(dataEnerg,labelsEnerg);
-    title(strcat('Puiss. energétique primaire:',num2str(PuissanceEnergPrimaire*(10^(-3))),'MW'));
+%     %%%%PIE CHART EXERG%%%%
+%     FIG(3)=figure('visible',disp);
+%     dataExerg = [IrrevExergCombustion,IrrevExergTransfThermique,PerteExergCheminee,IrrevComplexeRotoriqueCCGT,PerteExergCondenseur,PerteMecaCCGT,PuissanceEffectiveST,PuissanceEffectiveGT]*(10^(-3));
+%     labelsExerg = {strcat('Irrev. comb.:',num2str(dataExerg(1)),'MW'),strcat('Irrev. transf.:',num2str(dataExerg(2)),'MW'),strcat('Perte cheminee:',num2str(dataExerg(3)),'MW'),strcat('Irrev. rotor CCGT:',num2str(dataExerg(4)),'MW'),strcat('Perte condenseur:',num2str(dataExerg(5)),'MW'),strcat('Perte meca CCGT:',num2str(dataExerg(6)),'MW'),strcat('Puiss. TV:',num2str(dataExerg(7)),'MW'),strcat('Puiss. TG:',num2str(dataExerg(8)),'MW')};
+%     pie(dataExerg,labelsExerg);
+%     title(strcat('Puiss. exergétique primaire:',num2str(PuissanceExergPrimaire*(10^(-3))),'MW'));
+%     
+%     %%%%PIE CHART ENERG%%%%
+%     FIG(4)=figure('visible',disp);
+%     dataEnerg = [PerteEnergCheminee,PerteEnergCondenseur,PerteMecaCCGT,PuissanceEffectiveST,PuissanceEffectiveGT]*(10^(-3));
+%     labelsEnerg = {strcat('Perte cheminee:',num2str(dataEnerg(1)),'MW'),strcat('Perte condenseur:',num2str(dataEnerg(2)),'MW'),strcat('Perte meca CCGT:',num2str(dataEnerg(3)),'MW'),strcat('Puiss. TV:',num2str(dataEnerg(4)),'MW'),strcat('Puiss. TG:',num2str(dataEnerg(5)),'MW')};
+%     pie(dataEnerg,labelsEnerg);
+%     title(strcat('Puiss. energétique primaire:',num2str(PuissanceEnergPrimaire*(10^(-3))),'MW'));
     
 end
 
